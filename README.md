@@ -133,11 +133,29 @@ Collaborations are welcome! Please follow these steps:
 4.  **Push** to the branch (`git push origin feature/AmazingFeature`).
 5.  Open a **Pull Request**.
 
-### TODOs / Roadmap
-*   [ ] Implement "Piano Roll" or Sequencer view.
-*   [ ] Add Master Bus limiter visualizer.
-*   [ ] Improve iOS support (Audio Context unlocking).
-*   [ ] Add more real-time effects (e.g., Compressor, EQ per track).
+## 🗺️ Product Roadmap
+
+This outlines the planned direction for the app's development.
+
+### Phase 1: Short-Term (Quality of Life & Core Improvements)
+*   **Master Bus Limiter:** Implement a master channel limiter with visual gain reduction feedback to prevent clipping and enhance loudness.
+*   **Per-Track EQ:** Add a simple 3-band parametric equalizer (Low, Mid, High) to each track's mixer strip for basic tone shaping.
+*   **Clip Editing Tools:** Introduce tools in the Playlist View to split, duplicate, and move clips with greater precision.
+*   **Improved Mobile/iOS Support:** Resolve audio context unlocking issues to ensure smoother operation on mobile browsers, especially Safari.
+*   **UI/UX Refinements:** Continue to polish the user interface for a more intuitive and professional feel.
+
+### Phase 2: Mid-Term (Creative & Workflow Features)
+*   **Advanced FX Chains:** Allow users to add multiple effects per track (e.g., EQ -> Compressor -> Reverb) and re-order them.
+*   **Automation Lanes:** Implement automation for Volume, Pan, and effect parameters, drawable directly in the Playlist View.
+*   **MIDI Sequencing (Piano Roll):** A major feature to create and edit MIDI clips for sequencing internal samplers or external instruments.
+*   **Time Stretching & Pitch Shifting:** Add algorithms to allow for non-destructive time stretching and pitch shifting of audio clips.
+
+### Phase 3: Long-Term (Ecosystem & Advanced Capabilities)
+*   **Real-time Collaboration:** Explore technologies like WebRTC to allow multiple users to work on the same project simultaneously.
+*   **Cloud Project Sync:** Integrate an optional backend service for saving and syncing projects across different devices and platforms.
+*   **AI-Powered Stem Separation:** Integrate a client-side AI model to allow users to drop a full song onto a track and automatically separate it into stems (vocals, drums, bass, etc.).
+*   **Plugin Support (Experimental):** Investigate the feasibility of supporting third-party Web Audio Modules (WAMs) or VSTs compiled to WebAssembly.
+
 
 ## 📄 License
 
