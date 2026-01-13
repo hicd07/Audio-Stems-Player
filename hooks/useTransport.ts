@@ -31,21 +31,16 @@ const useTransport = () => {
 
     useEffect(() => {
         const updatePlaybackTime = () => {
-            if (!state.transport.isPlaying) return;
+            if (!transport.isPlaying) return;
 
             const elapsedTime = audioEngine.ctx.currentTime - playbackStartTimeRef.current;
             let newTime = seekOffsetRef.current + elapsedTime;
             
-            if (state.transport.loop && state.transport.duration > 0 && newTime >= state.transport.duration) {
-                const loopOffset = newTime % state.transport.duration;
-                seekOffsetRef.current = loopOffset;
-                playbackStartTimeRef.current = audioEngine.ctx.currentTime;
-                newTime = loopOffset;
-                const onTrackEnd = () => {};
-                audioEngine.startPlayback(state.tracks, onTrackEnd, state.transport.loop, loopOffset);
+            if (transport.loop && transport.duration > 0) {
+                newTime %= transport.duration;
             }
 
-            if (newTime >= state.transport.duration && !state.transport.loop) {
+            if (newTime >= transport.duration && !transport.loop) {
                 stopAll();
             } else {
                 dispatch({ type: 'SET_TRANSPORT', payload: { currentTime: newTime } });
@@ -64,7 +59,7 @@ const useTransport = () => {
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [state.transport.isPlaying, state.transport.duration, state.transport.loop, state.tracks, stopAll, dispatch]);
+    }, [transport.isPlaying, transport.duration, transport.loop, stopAll, dispatch]);
 
     return { handlePlayPause, stopAll };
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import Knob from './Knob';
+import VerticalFader from './VerticalFader';
 import { TrackData } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
@@ -8,7 +9,8 @@ interface MixerStripProps {
   channelNumber: number;
 }
 
-const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
+const panSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+const volumeSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.8, 0.875, 1]; // 0.8 is a common default
 
 const MixerStrip: React.FC<MixerStripProps> = ({ 
     track,
@@ -42,12 +44,13 @@ const MixerStrip: React.FC<MixerStripProps> = ({
 
   return (
     <div 
-      className={`flex flex-col items-center p-2 rounded-lg border min-w-[90px] h-full justify-between py-2 relative transition-colors ${isSelected ? 'bg-[#546E7A] border-green-400/50' : 'bg-[#37474F] border-black/30'}`}
+      className={`flex flex-col items-center p-2 rounded-lg border-2 min-w-[90px] h-full justify-between py-2 relative transition-all duration-200 ${isSelected ? 'bg-[#546E7A] scale-105' : 'bg-[#37474F] border-transparent'}`}
+      style={{ borderColor: isSelected ? track.color : 'transparent' }}
       onClick={() => dispatch({ type: 'SET_SELECTED_TRACK', payload: track.id })}
     >
       <div className="text-center mb-1 w-full">
         <div className="text-xs font-bold text-gray-300 mb-1">CH {channelNumber}</div>
-        <div className="text-[10px] text-gray-400 truncate w-full px-1">{track.name}</div>
+        <div className="text-[10px] font-bold truncate w-full px-1" style={{ color: track.color }}>{track.name}</div>
       </div>
 
       <div className={`h-2 w-2 mb-1 rounded-full transition-colors ${track.isClipping ? 'bg-red-500 shadow-[0_0_4px_1px_rgba(239,68,68,0.7)]' : 'bg-black/30'}`}></div>
@@ -71,17 +74,31 @@ const MixerStrip: React.FC<MixerStripProps> = ({
       </div>
 
 
-      <div 
-        className={`flex-1 flex items-center justify-center w-full py-1 relative ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse rounded-lg' : ''}`}
-        onMouseDown={(e) => { e.stopPropagation(); handleSetMappingTarget('volume'); }}
-      >
-        <input type="range" min="0" max="1" step="0.01" value={track.volume} onChange={(e) => handleVolumeChange(parseFloat(e.target.value))} onDoubleClick={() => handleVolumeChange(0.8)} className="h-32 w-1.5 appearance-none bg-[#2B3539] rounded-full outline-none slider-vertical cursor-pointer z-10" style={{ WebkitAppearance: 'slider-vertical' }} />
+      <div className="flex-1 w-full py-1 flex justify-center items-center">
+        <div 
+            className={`h-full ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse rounded-lg' : ''}`}
+            onMouseDown={(e) => {
+                if (isMidiLearn) {
+                    e.stopPropagation();
+                    handleSetMappingTarget('volume');
+                }
+            }}
+        >
+            <VerticalFader 
+                value={track.volume}
+                onChange={handleVolumeChange}
+                onDoubleClick={() => handleVolumeChange(0.8)}
+                color={track.color}
+                disabled={isMidiLearn}
+                snapPoints={volumeSnapPoints}
+            />
+        </div>
       </div>
 
       <div className="mt-1 text-xs font-mono text-gray-300 mb-2">{Math.round(track.volume * 100)}%</div>
       
       <div className="w-full">
-          <select value={track.outputDeviceId || ''} onChange={(e) => handleOutputChange(e.target.value)} className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded border border-black/20 focus:border-green-400 p-1 truncate" onClick={(e) => e.stopPropagation()}>
+          <select value={track.outputDeviceId || ''} onChange={(e) => handleOutputChange(e.target.value)} className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded border border-black/20 focus:border-cyan-400 p-1 truncate" onClick={(e) => e.stopPropagation()}>
               <option value="">Master</option>
               {enabledOutputDevices.map(d => (<option key={d.deviceId} value={d.deviceId}>{d.label.substring(0, 10)}...</option>))}
           </select>

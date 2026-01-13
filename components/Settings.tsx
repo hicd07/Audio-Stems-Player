@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Save, FolderOpen, RefreshCw, Radio, X } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import JSZip from 'jszip';
 import { audioEngine } from '../services/audioEngine';
 
 const SettingsModal: React.FC = () => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, refreshMidiDevices, refreshAudioDevices } = useAppContext();
     const {
         projectName,
         midiInputs, enabledMidiDevices,
@@ -15,9 +15,17 @@ const SettingsModal: React.FC = () => {
     } = state;
 
     const [activeTab, setActiveTab] = useState<'PROJECT' | 'MIDI' | 'AUDIO'>('PROJECT');
+    const [isVisible, setIsVisible] = useState(false);
     const loadProjectInputRef = useRef<HTMLInputElement>(null);
 
-    const onClose = () => dispatch({ type: 'SET_SHOW_SETTINGS', payload: false });
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
+
+    const onClose = () => {
+        setIsVisible(false);
+        setTimeout(() => dispatch({ type: 'SET_SHOW_SETTINGS', payload: false }), 200);
+    };
 
     const handleSaveProject = async () => {
         const zip = new JSZip();
@@ -26,7 +34,8 @@ const SettingsModal: React.FC = () => {
             projectName: state.projectName,
             tracks: tracksToSave,
             transport: state.transport,
-            midiMappings: state.midiMappings
+            midiMappings: state.midiMappings,
+            enabledMidiDevices: Array.from(state.enabledMidiDevices),
         };
         zip.file("project.json", JSON.stringify(projectData));
 
@@ -49,7 +58,7 @@ const SettingsModal: React.FC = () => {
         onClose();
     };
 
-    const TabButton: React.FC<{ tabId: any, label: string }> = ({ tabId, label }) => (
+    const TabButton: React.FC<{ tabId: 'PROJECT' | 'MIDI' | 'AUDIO', label: string }> = ({ tabId, label }) => (
         <button
             onClick={() => setActiveTab(tabId)}
             className={`px-4 py-2 text-sm rounded-t-lg transition-colors ${activeTab === tabId ? 'bg-[#37474F] text-white' : 'bg-[#2B3539] text-gray-400 hover:bg-[#313D42]'}`}
@@ -61,8 +70,8 @@ const SettingsModal: React.FC = () => {
     const enabledOutputDevicesList = outputDevices.filter(d => enabledAudioOutputDevices.has(d.deviceId));
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-[#2B3539] border border-black/30 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
+            <div className={`bg-[#2B3539] border border-black/30 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-2 border-b border-black/30 bg-[#37474F] rounded-t-lg">
                     <h2 className="text-lg font-bold text-gray-200 ml-2">Settings</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-black/20">
@@ -104,7 +113,7 @@ const SettingsModal: React.FC = () => {
                         <div className="space-y-4">
                              <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-gray-300">MIDI Input Devices</h3>
-                                <button onClick={() => dispatch({ type: 'REFRESH_MIDI_DEVICES' })} className="flex items-center gap-2 text-xs bg-black/20 hover:bg-black/30 text-gray-300 py-1 px-3 rounded transition-colors">
+                                <button onClick={refreshMidiDevices} className="flex items-center gap-2 text-xs bg-black/20 hover:bg-black/30 text-gray-300 py-1 px-3 rounded transition-colors">
                                     <RefreshCw size={14} /> Refresh
                                 </button>
                             </div>
@@ -122,7 +131,7 @@ const SettingsModal: React.FC = () => {
                                             {enabledMidiDevices.has(device.id) ? 'Disable' : 'Enable'}
                                         </button>
                                     </li>
-                                )) : <p className="text-gray-500">No MIDI devices found.</p>}
+                                )) : <p className="text-gray-500">No MIDI devices found. Click Refresh to scan.</p>}
                             </ul>
                         </div>
                     )}
@@ -130,7 +139,7 @@ const SettingsModal: React.FC = () => {
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-gray-300">Audio Devices</h3>
-                                <button onClick={() => dispatch({ type: 'REFRESH_AUDIO_DEVICES' })} className="flex items-center gap-2 text-xs bg-black/20 hover:bg-black/30 text-gray-300 py-1 px-3 rounded transition-colors">
+                                <button onClick={refreshAudioDevices} className="flex items-center gap-2 text-xs bg-black/20 hover:bg-black/30 text-gray-300 py-1 px-3 rounded transition-colors">
                                     <RefreshCw size={14} /> Refresh
                                 </button>
                             </div>

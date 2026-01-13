@@ -1,5 +1,6 @@
 import React from 'react';
 import Knob from './Knob';
+import VerticalFader from './VerticalFader';
 import { AudioDeviceInfo } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
@@ -15,7 +16,8 @@ interface SpecialMixerStripProps {
   isMetronome?: boolean;
 }
 
-const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
+const panSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+const volumeSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.8, 0.875, 1];
 const panColor = "#fbbf24";
 
 const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
@@ -42,11 +44,11 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
 
   return (
     <div 
-      className="flex flex-col items-center p-2 rounded-lg border min-w-[90px] h-full justify-between py-2 relative transition-colors"
-      style={{ backgroundColor: '#37474F', borderColor: color }}
+      className="flex flex-col items-center p-2 rounded-lg border-2 min-w-[90px] h-full justify-between py-2 relative transition-colors bg-[#37474F]"
+      style={{ borderColor: color }}
     >
       <div className="text-center mb-1 w-full">
-        <div className="text-xs font-bold mb-1" style={{ color }}>{name.toUpperCase()}</div>
+        <div className="text-xs font-bold mb-1 tracking-wider" style={{ color }}>{name.toUpperCase()}</div>
       </div>
       
       <div className="flex justify-center items-start w-full my-3 h-[70px]">
@@ -66,16 +68,13 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
         ) : <div className="w-full h-full"></div> /* Spacer */}
       </div>
 
-
-      <div className="flex-1 flex items-center justify-center w-full py-1 relative">
-        <input 
-            type="range" 
-            min="0" max="1" step="0.01" 
-            value={volume} 
-            onChange={(e) => onVolumeChange(parseFloat(e.target.value))} 
-            onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)} 
-            className="h-32 w-1.5 appearance-none bg-[#2B3539] rounded-full outline-none slider-vertical cursor-pointer z-10" 
-            style={{ WebkitAppearance: 'slider-vertical' }} 
+      <div className="flex-1 w-full py-1 flex justify-center items-center">
+        <VerticalFader 
+            value={volume}
+            onChange={onVolumeChange}
+            onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)}
+            color={color}
+            snapPoints={volumeSnapPoints}
         />
       </div>
 

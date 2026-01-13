@@ -48,7 +48,7 @@ const useAudioEngine = () => {
     useEffect(() => { audioEngine.setMetronomeSound(metronomeSound); }, [metronomeSound]);
     useEffect(() => { audioEngine.setMetronomeOutputDevice(metronomeOutputId); }, [metronomeOutputId]);
     useEffect(() => { audioEngine.setMasterOutputDevice(masterOutputId); }, [masterOutputId]);
-
+    
     // Sync individual track volumes/pans
     useEffect(() => {
         tracks.forEach(track => {
@@ -57,7 +57,7 @@ const useAudioEngine = () => {
         });
     }, [tracks]);
 
-    // Metronome sync
+    // Metronome sync for global transport
     useEffect(() => {
         if (transport.isPlaying) {
             audioEngine.stopMetronome();

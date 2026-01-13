@@ -35,62 +35,107 @@
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
       }
+
+      /* --- NEW UI ENHANCEMENT STYLES --- */
       
-      /* Custom Vertical Slider */
-      .slider-vertical {
-        -webkit-appearance: none;
-        appearance: none;
-        background: #2B3539;
-        border-radius: 9999px;
-        outline: none;
-        cursor: pointer;
+      /* Tactile Button Style */
+      .btn {
+        background-color: #4A585D;
+        background-image: linear-gradient(to bottom, #4A585D, #424F54);
+        border: 1px solid #2B3539;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.1);
+        transition: all 150ms ease-out;
       }
-      .slider-vertical::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 16px;
-        height: 16px;
-        background: var(--thumb-color, #f87171);
-        border-radius: 50%;
-        border: 2px solid #ffffff;
+      .btn:hover {
+        background-color: #5A6B72;
       }
-      .slider-vertical::-moz-range-thumb {
-        width: 12px;
-        height: 12px;
-        background: var(--thumb-color, #f87171);
-        border-radius: 50%;
-        border: 2px solid #ffffff;
+      .btn:active {
+        background-image: none;
+        background-color: #3E4A4F;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        transform: translateY(1px);
       }
 
-      /* Custom Horizontal Slider (for Pan/FX) */
-      .slider-horizontal {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 6px;
-        background: #374151; /* Default track color */
+      /* Compact Button Group for Zoom Controls */
+      .compact-btn-group {
+        display: flex;
+        align-items: center;
+        background-color: #4A585D;
+        border: 1px solid #2B3539;
+        border-radius: 6px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+      .compact-btn-group button {
+          padding: 4px 6px;
+          color: #CBD5E1;
+          transition: background-color 150ms ease-out;
+      }
+      .compact-btn-group button:hover {
+          background-color: #5A6B72;
+      }
+      .compact-btn-group button:active {
+          background-color: #3E4A4F;
+      }
+      .compact-btn-group-label {
+          font-size: 11px;
+          font-weight: bold;
+          color: #90A4AE;
+          padding: 0 4px;
+          user-select: none;
+          background-color: #3E4A4F;
+          border-left: 1px solid #2B3539;
+          border-right: 1px solid #2B3539;
+          height: 100%;
+          display: flex;
+          align-items: center;
+      }
+      
+      /* --- VERTICAL FADER (Custom DIV Implementation) --- */
+      .fader-container {
+        position: relative;
+        width: 40px; /* Wider hit area */
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: ns-resize;
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Old Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+      }
+      .fader-track-bg {
+        position: absolute;
+        width: 8px;
+        height: 100%;
+        background-color: #252E32;
+        border-radius: 4px;
+        border: 1px solid #1a2023;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+        pointer-events: none;
+      }
+      .fader-fill {
+        position: absolute;
+        bottom: 0;
+        width: 8px;
+        background-color: var(--fader-color, #9ca3af);
+        border-radius: 4px;
+        pointer-events: none;
+      }
+      .fader-thumb {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 30px;
+        height: 18px;
+        background: linear-gradient(to bottom, #ECEFF1 0%, #B0BEC5 100%);
         border-radius: 3px;
-        outline: none;
-        transition: opacity .2s;
-        cursor: pointer;
-      }
-      
-      .slider-horizontal::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 14px;
-        height: 14px;
-        background: #e5e7eb; /* Thumb color */
-        border-radius: 50%;
-        margin-top: -4px; /* Center thumb vertically */
-      }
-      
-      .slider-horizontal::-moz-range-thumb {
-        width: 14px;
-        height: 14px;
-        background: #e5e7eb;
-        border-radius: 50%;
-        border: none;
+        border: 1px solid #546E7A;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.1);
+        pointer-events: none;
       }
     </style>
   <script type="importmap">

@@ -1,9 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { TrackData } from '../types';
-import { ZoomIn, ZoomOut, ArrowUp, ArrowDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ZoomIn, ZoomOut, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import Track from './Track';
 import { useAppContext } from '../contexts/AppContext';
 import { audioEngine } from '../services/audioEngine';
+
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 const TrackLane: React.FC<{
   data: TrackData;
@@ -27,7 +35,7 @@ const TrackLane: React.FC<{
     if (canvasRef.current && duration > 0) {
         drawCanvas(data.audioBuffer, canvasRef.current, pixelsPerSecond, trackHeight);
     }
-  }, [data.audioBuffer, duration, pixelsPerSecond, trackHeight, data.trimStart, data.trimEnd]);
+  }, [data.audioBuffer, duration, pixelsPerSecond, trackHeight, data.trimStart, data.trimEnd, data.color, selected]);
   
   const drawCanvas = (buffer: AudioBuffer | null, canvas: HTMLCanvasElement, pxPerSec: number, height: number) => {
     const ctx = canvas.getContext('2d');
@@ -48,7 +56,7 @@ const TrackLane: React.FC<{
 
         const startX = Math.floor(clipStart * pxPerSec);
         const amp = (height / 2) * 0.9;
-        ctx.fillStyle = '#839197';
+        ctx.fillStyle = data.color;
 
         const rectWidth = 1;
         for (let i = 0; i < waveformWidthInPixels; i+= rectWidth) {
@@ -58,13 +66,12 @@ const TrackLane: React.FC<{
             ctx.fillRect(startX + i, y, rectWidth, rectWidth);
         }
 
-        // Draw selection overlay
         const region = new Path2D();
         region.rect(startX, 0, waveformWidthInPixels, height);
-        ctx.strokeStyle = '#22d3ee';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = data.color;
+        ctx.lineWidth = selected ? 2 : 1;
         ctx.stroke(region);
-        ctx.fillStyle = 'rgba(34, 211, 238, 0.1)';
+        ctx.fillStyle = hexToRgba(data.color, 0.15);
         ctx.fill(region);
     }
   };
@@ -156,13 +163,12 @@ const GridCanvas: React.FC<{ duration: number, bpm: number, pixelsPerSecond: num
 };
 
 const PlaylistView: React.FC = () => {
-    const { state } = useAppContext();
-    const { tracks, transport, selectedTrackId } = state;
+    const { state, dispatch } = useAppContext();
+    const { tracks, transport, selectedTrackId, isPlaylistPanelVisible } = state;
     const timelineContainerRef = useRef<HTMLDivElement>(null);
     const headerContainerRef = useRef<HTMLDivElement>(null);
     const rulerContainerRef = useRef<HTMLDivElement>(null);
     
-    const [isPanelVisible, setIsPanelVisible] = useState(true);
     const [hZoom, setHZoom] = useState(1);
     const [vZoom, setVZoom] = useState(1);
     const pixelsPerSecond = 80 * hZoom;
@@ -186,31 +192,37 @@ const PlaylistView: React.FC = () => {
         if (headerContainerRef.current) headerContainerRef.current.scrollTop = e.currentTarget.scrollTop;
         if (rulerContainerRef.current) rulerContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
     };
-    
-    const ZoomButton: React.FC<{ onClick: () => void, children: React.ReactNode, title: string }> = ({ onClick, children, title }) => (
-      <button onClick={onClick} title={title} className="p-2 text-gray-400 hover:text-white bg-black/10 hover:bg-black/30 rounded">{children}</button>
-    );
 
     return (
         <div className="flex-1 flex bg-[#2B3539] w-full h-full">
             <div className={`
-                ${isPanelVisible ? 'w-56' : 'w-0 border-r-0'} 
+                ${isPlaylistPanelVisible ? 'w-56' : 'w-0 border-r-0'} 
                 flex-shrink-0 bg-[#37474F] border-r border-black/30 shadow-lg 
                 transition-all duration-300 overflow-hidden`}>
                 <div className="w-56">
-                     <div className="h-8 bg-[#252E32] flex items-center justify-start gap-2 text-xs px-1">
-                        <button onClick={() => setIsPanelVisible(false)} title="Hide Track List" className="p-2 text-gray-400 hover:text-white bg-black/10 hover:bg-black/30 rounded">
-                            <PanelLeftClose size={18} strokeWidth={2.5}/>
+                     <div className="h-8 bg-[#252E32] flex items-center justify-between gap-2 text-xs px-2">
+                        <button onClick={() => dispatch({ type: 'ADD_TRACK' })} title="Add New Track" className="btn p-1.5 rounded text-gray-300">
+                            <PlusCircle size={18} />
                         </button>
-                        <div className="w-px h-5 bg-black/30"></div>
-                        <div className="flex items-center gap-1">
-                            <ZoomButton onClick={() => setHZoom(z => Math.max(0.2, z - 0.2))} title="Zoom Out Horizontally"><ZoomOut size={18} strokeWidth={2.5}/></ZoomButton>
-                            <ZoomButton onClick={() => setHZoom(z => z + 0.2)} title="Zoom In Horizontally"><ZoomIn size={18} strokeWidth={2.5}/></ZoomButton>
-                        </div>
-                        <div className="w-px h-5 bg-black/30"></div>
-                        <div className="flex items-center gap-1">
-                            <ZoomButton onClick={() => setVZoom(z => Math.max(0.5, z - 0.1))} title="Zoom Out Vertically (Smaller Tracks)"><ArrowDown size={18} strokeWidth={2.5}/></ZoomButton>
-                            <ZoomButton onClick={() => setVZoom(z => z + 0.1)} title="Zoom In Vertically (Larger Tracks)"><ArrowUp size={18} strokeWidth={2.5}/></ZoomButton>
+                        <div className="flex items-center gap-2">
+                            <div className="compact-btn-group">
+                                <button onClick={() => setHZoom(z => Math.max(0.2, z - 0.2))} title="Zoom Out Horizontally">
+                                    <ZoomOut size={16} strokeWidth={2.5}/>
+                                </button>
+                                <span className="compact-btn-group-label">H</span>
+                                <button onClick={() => setHZoom(z => z + 0.2)} title="Zoom In Horizontally">
+                                    <ZoomIn size={16} strokeWidth={2.5}/>
+                                </button>
+                            </div>
+                            <div className="compact-btn-group">
+                                <button onClick={() => setVZoom(z => Math.max(0.5, z - 0.1))} title="Zoom Out Vertically">
+                                    <ArrowDown size={16} strokeWidth={2.5}/>
+                                </button>
+                                <span className="compact-btn-group-label">V</span>
+                                <button onClick={() => setVZoom(z => z + 0.1)} title="Zoom In Vertically">
+                                    <ArrowUp size={16} strokeWidth={2.5}/>
+                                </button>
+                            </div>
                         </div>
                      </div>
                      <div ref={headerContainerRef} className="overflow-hidden h-[calc(100%-32px)]" style={{ boxSizing: 'border-box' }}>
@@ -219,22 +231,12 @@ const PlaylistView: React.FC = () => {
                 </div>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden relative">
-                {!isPanelVisible && (
-                    <button 
-                        onClick={() => setIsPanelVisible(true)} 
-                        title="Show Track List"
-                        className="absolute top-0 left-0 z-30 h-8 w-8 bg-[#252E32] hover:bg-[#37474F] flex items-center justify-center rounded-br-md text-gray-400 hover:text-white"
-                        aria-label="Show Track List"
-                    >
-                        <PanelLeftOpen size={18} strokeWidth={2.5} />
-                    </button>
-                )}
                 <div ref={rulerContainerRef} className="h-8 overflow-hidden flex-shrink-0 hide-scrollbar flex items-center">
                     <TimelineRuler duration={transport.duration} bpm={transport.bpm} pixelsPerSecond={pixelsPerSecond} />
                 </div>
                 <div
                   ref={timelineContainerRef}
-                  className="flex-1 relative overflow-auto"
+                  className="flex-1 relative overflow-auto shadow-inner"
                   onScroll={handleScroll}
                 >
                     <div className="relative" style={{ width: transport.duration * pixelsPerSecond, height: tracks.length * trackHeight }}>

@@ -1,5 +1,5 @@
-import React, { createContext, useReducer, useContext, Dispatch } from 'react';
-import { TrackData, TransportState, AudioDeviceInfo, MidiDeviceInfo, MidiMapping, MidiMappingTarget, EffectType, MetronomeSound } from '../types';
+import React, { createContext, useReducer, useContext, Dispatch, useEffect, useCallback, useRef } from 'react';
+import { TrackData, TransportState, AudioDeviceInfo, MidiDeviceInfo, MidiMapping, MidiMappingTarget, EffectType, MetronomeSound, TRACK_COLORS } from '../types';
 import JSZip from 'jszip';
 import { audioEngine } from '../services/audioEngine';
 
@@ -9,6 +9,7 @@ export interface AppState {
     selectedTrackId: number | null;
     transport: TransportState;
     viewMode: 'PLAYLIST' | 'MIXER';
+    isPlaylistPanelVisible: boolean;
     projectName: string;
     isLoading: boolean;
     // Modals
@@ -39,9 +40,9 @@ const createInitialTracks = (count = 8): TrackData[] => {
     return Array.from({ length: count }).map((_, i) => ({
       id: Date.now() + i,
       name: `Track ${i + 1}`,
-      color: '#22d3ee',
+      color: TRACK_COLORS[0],
+      icon: undefined,
       audioBuffer: null,
-      isPlaying: false,
       isMuted: false,
       isSolo: false,
       volume: 0.8,
@@ -61,6 +62,7 @@ export const initialState: AppState = {
     selectedTrackId: initialTracks[0]?.id || null,
     transport: { isPlaying: false, bpm: 120, metronomeOn: false, isRecording: false, loop: false, currentTime: 0, duration: 32 },
     viewMode: 'PLAYLIST',
+    isPlaylistPanelVisible: true,
     projectName: 'New Project',
     isLoading: false,
     showSettings: false,
@@ -96,6 +98,7 @@ type Action =
   | { type: 'SET_CLIPPING'; payload: { trackId: number; isClipping: boolean } }
   | { type: 'SET_TRANSPORT'; payload: Partial<TransportState> }
   | { type: 'SET_VIEW_MODE'; payload: 'PLAYLIST' | 'MIXER' }
+  | { type: 'SET_PLAYLIST_PANEL_VISIBLE'; payload: boolean }
   | { type: 'SET_IS_LOADING'; payload: boolean }
   | { type: 'SET_PROJECT_NAME'; payload: string }
   | { type: 'LOAD_PROJECT'; payload: File }
@@ -103,7 +106,6 @@ type Action =
   | { type: 'SET_METRONOME_MODAL_OPEN'; payload: boolean }
   | { type: 'SET_AUDIO_DEVICES'; payload: { inputs: AudioDeviceInfo[]; outputs: AudioDeviceInfo[] } }
   | { type: 'TOGGLE_AUDIO_DEVICE'; payload: { deviceId: string; kind: 'audioinput' | 'audiooutput' } }
-  | { type: 'REFRESH_AUDIO_DEVICES' }
   | { type: 'SET_MASTER_OUTPUT'; payload: string }
   | { type: 'SET_MASTER_VOLUME'; payload: number }
   | { type: 'SET_METRONOME_VOLUME'; payload: number }
@@ -112,7 +114,6 @@ type Action =
   | { type: 'SET_METRONOME_OUTPUT'; payload: string }
   | { type: 'SET_MIDI_DEVICES'; payload: MidiDeviceInfo[] }
   | { type: 'TOGGLE_MIDI_DEVICE'; payload: string }
-  | { type: 'REFRESH_MIDI_DEVICES' }
   | { type: 'TOGGLE_MIDI_LEARN' }
   | { type: 'SET_MIDI_MAPPING'; payload: { midiId: string, target: MidiMappingTarget } }
   | { type: 'SET_MIDI_MAPPING_TARGET'; payload: MidiMappingTarget | null }
@@ -123,7 +124,7 @@ const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case 'SET_TRACKS': return { ...state, tracks: action.payload };
     case 'ADD_TRACK':
-        const newTrack: TrackData = { id: Date.now(), name: `Track ${state.tracks.length + 1}`, color: '#22d3ee', audioBuffer: null, isPlaying: false, isMuted: false, isSolo: false, volume: 0.8, pan: 0, effect: { type: EffectType.NONE, dryWet: 0, params: { param1: 0.5, param2: 0.5 }}, trimStart: 0, trimEnd: 0, isClipping: false };
+        const newTrack: TrackData = { id: Date.now(), name: `Track ${state.tracks.length + 1}`, color: TRACK_COLORS[0], icon: undefined, audioBuffer: null, isMuted: false, isSolo: false, volume: 0.8, pan: 0, effect: { type: EffectType.NONE, dryWet: 0, params: { param1: 0.5, param2: 0.5 }}, trimStart: 0, trimEnd: 0, isClipping: false };
         return { ...state, tracks: [...state.tracks, newTrack] };
     case 'REMOVE_TRACK': return { ...state, tracks: state.tracks.filter(t => t.id !== action.payload) };
     case 'UPDATE_TRACK':
@@ -139,6 +140,7 @@ const appReducer = (state: AppState, action: Action): AppState => {
     
     case 'SET_TRANSPORT': return { ...state, transport: { ...state.transport, ...action.payload } };
     case 'SET_VIEW_MODE': return { ...state, viewMode: action.payload };
+    case 'SET_PLAYLIST_PANEL_VISIBLE': return { ...state, isPlaylistPanelVisible: action.payload };
     case 'SET_IS_LOADING': return { ...state, isLoading: action.payload };
     case 'SET_PROJECT_NAME': return { ...state, projectName: action.payload };
     case 'LOAD_PROJECT': // This is a command action, handled by middleware/hook
@@ -155,8 +157,6 @@ const appReducer = (state: AppState, action: Action): AppState => {
         const newSet = new Set(set);
         if (newSet.has(deviceId)) newSet.delete(deviceId); else newSet.add(deviceId);
         return kind === 'audioinput' ? { ...state, enabledAudioInputDevices: newSet } : { ...state, enabledAudioOutputDevices: newSet };
-    case 'REFRESH_AUDIO_DEVICES': // Command action
-        return state;
     case 'SET_MASTER_OUTPUT': return { ...state, masterOutputId: action.payload };
     
     case 'SET_MASTER_VOLUME': return { ...state, masterVolume: action.payload };
@@ -170,8 +170,6 @@ const appReducer = (state: AppState, action: Action): AppState => {
         const newMidiSet = new Set(state.enabledMidiDevices);
         if (newMidiSet.has(action.payload)) newMidiSet.delete(action.payload); else newMidiSet.add(action.payload);
         return { ...state, enabledMidiDevices: newMidiSet };
-    case 'REFRESH_MIDI_DEVICES': // Command action
-        return state;
     case 'TOGGLE_MIDI_LEARN': return { ...state, isMidiLearn: !state.isMidiLearn, midiMappingTarget: null };
     case 'SET_MIDI_MAPPING':
         return { ...state, midiMappings: { ...state.midiMappings, [action.payload.midiId]: action.payload.target }, isMidiLearn: false, midiMappingTarget: null };
@@ -181,13 +179,88 @@ const appReducer = (state: AppState, action: Action): AppState => {
   }
 };
 
-const AppContext = createContext<{ state: AppState; dispatch: Dispatch<Action> }>({
+// --- CONTEXT ---
+interface AppContextValue {
+    state: AppState;
+    dispatch: Dispatch<Action>;
+    refreshMidiDevices: () => Promise<void>;
+    refreshAudioDevices: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextValue>({
     state: initialState,
     dispatch: () => null,
+    refreshMidiDevices: async () => {},
+    refreshAudioDevices: async () => {},
 });
 
 export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     const [state, dispatch] = useReducer(appReducer, initialState);
+
+    const onMidiMessageRef = useRef<(event: MIDIMessageEvent) => void>();
+
+    // Keep the MIDI message handler updated with the latest state using a ref
+    useEffect(() => {
+        onMidiMessageRef.current = (event: MIDIMessageEvent) => {
+            if (!state.enabledMidiDevices.has((event.currentTarget as any).id)) return;
+    
+            const [command, note, velocity] = event.data;
+            const isCC = (command & 0xF0) === 0xB0;
+            const channel = command & 0x0F;
+
+            if (isCC) {
+                const midiId = `cc-${note}-ch-${channel}`;
+                if (state.isMidiLearn && state.midiMappingTarget) {
+                    dispatch({ type: 'SET_MIDI_MAPPING', payload: { midiId, target: state.midiMappingTarget }});
+                    return;
+                }
+                
+                const mapping = state.midiMappings[midiId];
+                if (mapping) {
+                    const val = velocity / 127;
+                    switch(mapping.control) {
+                        case 'volume': 
+                            dispatch({ type: 'UPDATE_TRACK', payload: { id: mapping.trackId, updates: { volume: val } } });
+                            break;
+                        case 'pan':
+                            dispatch({ type: 'UPDATE_TRACK', payload: { id: mapping.trackId, updates: { pan: (val * 2) - 1 } } });
+                            break;
+                        case 'mute':
+                            if (velocity > 0) dispatch({ type: 'TOGGLE_MUTE', payload: mapping.trackId });
+                            break;
+                        case 'solo': 
+                            if (velocity > 0) dispatch({ type: 'TOGGLE_SOLO', payload: mapping.trackId });
+                            break;
+                    }
+                }
+            }
+        };
+    }, [state.enabledMidiDevices, state.isMidiLearn, state.midiMappingTarget, state.midiMappings, dispatch]);
+
+    const refreshMidiDevices = useCallback(async () => {
+        try {
+            const access = await navigator.requestMIDIAccess();
+            const inputs: MidiDeviceInfo[] = [];
+            access.inputs.forEach(input => {
+                inputs.push({ id: input.id, name: input.name || 'Unknown Device', manufacturer: input.manufacturer || 'Unknown' });
+                input.onmidimessage = (event) => onMidiMessageRef.current?.(event);
+            });
+            dispatch({ type: 'SET_MIDI_DEVICES', payload: inputs });
+        } catch (e) { console.error("Could not access MIDI devices.", e); }
+    }, []);
+
+    const refreshAudioDevices = useCallback(async () => {
+        const devices = await audioEngine.getDevices();
+        const inputs = devices.filter(d => d.kind === 'audioinput');
+        const outputs = devices.filter(d => d.kind === 'audiooutput');
+        dispatch({ type: 'SET_AUDIO_DEVICES', payload: { inputs, outputs } });
+    }, []);
+
+    // Initial device fetch on mount
+    useEffect(() => {
+        refreshAudioDevices();
+        refreshMidiDevices();
+    }, [refreshAudioDevices, refreshMidiDevices]);
 
     const asyncDispatch = async (action: Action) => {
         if (action.type === 'LOAD_PROJECT') {
@@ -210,13 +283,15 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
                     }
                     loadedTracks.push({ ...trackData, audioBuffer, isClipping: false });
                 }
+                
+                const enabledMidiDevices = new Set(projectData.enabledMidiDevices || []);
 
-                // Create a full state object to reset to
                 const newState: AppState = {
-                    ...initialState, // Start with defaults
-                    ...projectData, // Overwrite with project data
-                    tracks: loadedTracks, // Use the processed tracks
-                    isLoading: false, // Ensure loading is false
+                    ...initialState,
+                    ...projectData,
+                    tracks: loadedTracks,
+                    enabledMidiDevices: enabledMidiDevices,
+                    isLoading: false,
                 };
                 dispatch({ type: 'RESET_STATE', payload: newState });
 
@@ -231,7 +306,11 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         }
     };
     
-    return <AppContext.Provider value={{ state, dispatch: asyncDispatch }}>{children}</AppContext.Provider>;
+    return (
+        <AppContext.Provider value={{ state, dispatch: asyncDispatch, refreshMidiDevices, refreshAudioDevices }}>
+            {children}
+        </AppContext.Provider>
+    );
 };
 
 export const useAppContext = () => useContext(AppContext);

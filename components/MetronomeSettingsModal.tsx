@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Music4 } from 'lucide-react';
 import { METRONOME_SOUNDS, MetronomeSound } from '../types';
 import { useAppContext } from '../contexts/AppContext';
@@ -7,16 +7,25 @@ import { audioEngine } from '../services/audioEngine';
 const MetronomeSettingsModal: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const { metronomeSound } = state;
+    const [isVisible, setIsVisible] = useState(false);
 
-    const onClose = () => dispatch({ type: 'SET_METRONOME_MODAL_OPEN', payload: false });
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
+
+    const onClose = () => {
+        setIsVisible(false);
+        setTimeout(() => dispatch({ type: 'SET_METRONOME_MODAL_OPEN', payload: false }), 200);
+    };
+
     const onSoundChange = (sound: MetronomeSound) => {
         dispatch({ type: 'SET_METRONOME_SOUND', payload: sound });
         audioEngine.playMetronomePreview(sound);
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-[#2B3539] border border-black/30 rounded-lg shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
+            <div className={`bg-[#2B3539] border border-black/30 rounded-lg shadow-2xl w-full max-w-sm transition-all duration-200 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-3 border-b border-black/30 bg-[#37474F] rounded-t-lg">
                     <h2 className="text-lg font-bold text-gray-200 flex items-center gap-2">
                         <Music4 size={20} />

@@ -21,8 +21,8 @@ export interface TrackData {
   id: number;
   name: string;
   color: string;
+  icon?: string;
   audioBuffer: AudioBuffer | null;
-  isPlaying: boolean;
   isMuted: boolean;
   isSolo: boolean;
   volume: number; // 0 to 1
@@ -87,4 +87,19 @@ export const METRONOME_SOUNDS: { id: MetronomeSound; name: string }[] = [
     { id: 'beep', name: 'Beep' },
     { id: 'woodblock', name: 'Woodblock' },
     { id: 'cowbell', name: 'Cowbell' },
+];
+
+// Curated color palette for tracks
+export const TRACK_COLORS = [
+    '#78909C', // Blue Grey (Default)
+    '#EF5350', // Red
+    '#EC407A', // Pink
+    '#AB47BC', // Purple
+    '#5C6BC0', // Indigo
+    '#42A5F5', // Blue
+    '#26C6DA', // Cyan
+    '#26A69A', // Teal
+    '#66BB6A', // Green
+    '#FFEE58', // Yellow
+    '#FFA726', // Orange
 ];
