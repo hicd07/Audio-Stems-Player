@@ -179,12 +179,86 @@ const appReducer = (state: AppState, action: Action): AppState => {
   }
 };
 
+// --- Tempo Detection Utility ---
+async function detectTempoFromBuffer(audioBuffer: AudioBuffer): Promise<number | null> {
+    const sampleRate = audioBuffer.sampleRate;
+    const offlineCtx = new OfflineAudioContext(1, audioBuffer.length, sampleRate);
+
+    const source = offlineCtx.createBufferSource();
+    source.buffer = audioBuffer;
+
+    const filter = offlineCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 150; // Isolate kick/bass frequencies
+    filter.Q.value = 1;
+
+    source.connect(filter);
+    filter.connect(offlineCtx.destination);
+    source.start(0);
+
+    const renderedBuffer = await offlineCtx.startRendering();
+    const data = renderedBuffer.getChannelData(0);
+
+    const peaks: number[] = [];
+    const peakThreshold = 0.3; // This may need adjustment for different material
+
+    for (let i = 1; i < data.length - 1; i++) {
+        if (data[i] > data[i - 1] && data[i] > data[i + 1] && data[i] > peakThreshold) {
+            peaks.push(i);
+        }
+    }
+
+    if (peaks.length < 4) return null; // Not enough peaks for a reliable guess
+
+    const intervals: number[] = [];
+    for (let i = 0; i < peaks.length - 1; i++) {
+        const intervalInSamples = peaks[i + 1] - peaks[i];
+        const intervalInSeconds = intervalInSamples / sampleRate;
+        intervals.push(intervalInSeconds);
+    }
+
+    const intervalGroups: { [key: number]: number } = {};
+    intervals.forEach(interval => {
+        if (interval > 0) {
+            const tempo = 60 / interval;
+            if (tempo >= 70 && tempo <= 180) { // Consider a reasonable BPM range
+                const roundedTempo = Math.round(tempo);
+                intervalGroups[roundedTempo] = (intervalGroups[roundedTempo] || 0) + 1;
+            }
+        }
+    });
+
+    let bestTempo = 0;
+    let maxCount = 0;
+    for (const tempo in intervalGroups) {
+        if (intervalGroups[tempo] > maxCount) {
+            maxCount = intervalGroups[tempo];
+            bestTempo = parseInt(tempo, 10);
+        }
+    }
+
+    if (bestTempo === 0) return null;
+
+    // Refine tempo by averaging intervals around the best guess
+    const tempoInterval = 60 / bestTempo;
+    const threshold = 0.1; // 10% tolerance for interval matching
+    const validIntervals = intervals.filter(interval => Math.abs(interval - tempoInterval) < tempoInterval * threshold);
+
+    if (validIntervals.length < 2) return bestTempo; // Not enough consensus, return rounded guess
+
+    const averageInterval = validIntervals.reduce((sum, val) => sum + val, 0) / validIntervals.length;
+
+    return 60 / averageInterval;
+}
+
+
 // --- CONTEXT ---
 interface AppContextValue {
     state: AppState;
     dispatch: Dispatch<Action>;
     refreshMidiDevices: () => Promise<void>;
     refreshAudioDevices: () => Promise<void>;
+    handleDetectTempo: (trackId: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue>({
@@ -192,6 +266,7 @@ const AppContext = createContext<AppContextValue>({
     dispatch: () => null,
     refreshMidiDevices: async () => {},
     refreshAudioDevices: async () => {},
+    handleDetectTempo: async () => {},
 });
 
 export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
@@ -256,6 +331,33 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         dispatch({ type: 'SET_AUDIO_DEVICES', payload: { inputs, outputs } });
     }, []);
 
+    const handleDetectTempo = useCallback(async (trackId: number) => {
+        const track = state.tracks.find(t => t.id === trackId);
+        if (!track || !track.audioBuffer) {
+            alert('No audio loaded in this track to analyze.');
+            return;
+        }
+
+        dispatch({ type: 'SET_IS_LOADING', payload: true });
+        try {
+            const tempo = await detectTempoFromBuffer(track.audioBuffer);
+            if (tempo) {
+                const roundedTempo = parseFloat(tempo.toFixed(2));
+                if (window.confirm(`Detected tempo: ${roundedTempo} BPM.\n\nSet as project tempo?`)) {
+                    dispatch({ type: 'SET_TRANSPORT', payload: { bpm: roundedTempo } });
+                }
+            } else {
+                alert('Could not detect a clear tempo for this track.');
+            }
+        } catch (error) {
+            console.error("Tempo detection failed:", error);
+            alert('An error occurred during tempo detection.');
+        } finally {
+            dispatch({ type: 'SET_IS_LOADING', payload: false });
+        }
+    }, [state.tracks]);
+
+
     // Initial device fetch on mount
     useEffect(() => {
         refreshAudioDevices();
@@ -307,7 +409,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
     };
     
     return (
-        <AppContext.Provider value={{ state, dispatch: asyncDispatch, refreshMidiDevices, refreshAudioDevices }}>
+        <AppContext.Provider value={{ state, dispatch: asyncDispatch, refreshMidiDevices, refreshAudioDevices, handleDetectTempo }}>
             {children}
         </AppContext.Provider>
     );

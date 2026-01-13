@@ -22,7 +22,7 @@ interface TrackProps {
 }
 
 const Track: React.FC<TrackProps> = ({ track, selected, trackHeight }) => {
-    const { state, dispatch } = useAppContext();
+    const { state, dispatch, handleDetectTempo } = useAppContext();
     const { isMidiLearn, midiMappingTarget } = state;
 
     const [isEditing, setIsEditing] = useState(false);
@@ -103,6 +103,7 @@ const Track: React.FC<TrackProps> = ({ track, selected, trackHeight }) => {
                     onClose={() => setIsMenuModalOpen(false)}
                     onStartRename={() => setIsEditing(true)}
                     onOpenIconModal={() => setIsIconModalOpen(true)}
+                    onDetectTempo={() => handleDetectTempo(track.id)}
                 />
             )}
             {isIconModalOpen && (

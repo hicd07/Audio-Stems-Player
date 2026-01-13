@@ -53,7 +53,7 @@ const AppContent: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2 bg-[#252E32] p-1 rounded-md border border-black/30 shadow-inner">
-                            <input type="number" value={transport.bpm} onChange={(e) => dispatch({ type: 'SET_TRANSPORT', payload: { ...transport, bpm: parseInt(e.target.value) || 120 } })} className="w-16 bg-transparent text-center text-2xl font-mono focus:outline-none" />
+                            <input type="number" step="0.01" value={transport.bpm} onChange={(e) => dispatch({ type: 'SET_TRANSPORT', payload: { ...transport, bpm: parseFloat(e.target.value) || 120 } })} className="w-24 bg-transparent text-center text-2xl font-mono focus:outline-none" />
                             <span className="text-gray-400 text-sm font-bold pr-1 tracking-wider">BPM</span>
                             <div className="w-px h-5 bg-black/30"></div>
                             <button onMouseDown={handleMetronomeMouseDown} onMouseUp={handleMetronomeMouseUp} onMouseLeave={handleMetronomeMouseLeave} title="Toggle Metronome (Hold for settings)" className={`p-1.5 rounded-md transition-colors ${transport.metronomeOn ? 'text-cyan-400 bg-cyan-900/50' : 'text-gray-400 hover:bg-black/20'}`}>

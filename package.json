@@ -1,9 +1,9 @@
 {
-  "name": "simple-clip-launcher",
+  "name": "stem-player-mixer",
   "version": "1.0.0",
-  "description": "A professional-grade MIDI clip launcher",
+  "description": "A professional-grade stem player and audio mixer, built with the Web Audio API.",
   "main": "electron/main.js",
-  "author": "User",
+  "author": "hicd07",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

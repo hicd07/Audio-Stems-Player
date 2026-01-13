@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit, Palette, Trash2 } from 'lucide-react';
+import { X, Edit, Palette, Trash2, Wand2 } from 'lucide-react';
 import { TrackData as TrackDataType, TRACK_COLORS } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
@@ -8,9 +8,10 @@ interface TrackMenuModalProps {
     onClose: () => void;
     onStartRename: () => void;
     onOpenIconModal: () => void;
+    onDetectTempo: () => void;
 }
 
-const TrackMenuModal: React.FC<TrackMenuModalProps> = ({ track, onClose, onStartRename, onOpenIconModal }) => {
+const TrackMenuModal: React.FC<TrackMenuModalProps> = ({ track, onClose, onStartRename, onOpenIconModal, onDetectTempo }) => {
     const { dispatch } = useAppContext();
     const [isVisible, setIsVisible] = useState(false);
 
@@ -32,6 +33,11 @@ const TrackMenuModal: React.FC<TrackMenuModalProps> = ({ track, onClose, onStart
         onOpenIconModal();
         handleClose();
     };
+
+    const handleDetectTempo = () => {
+        onDetectTempo();
+        handleClose();
+    }
 
     const handleSetColor = (color: string) => {
         dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { color } } });
@@ -58,6 +64,12 @@ const TrackMenuModal: React.FC<TrackMenuModalProps> = ({ track, onClose, onStart
                     <button onClick={handleRename} className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-gray-200 hover:bg-[#37474F] hover:text-white rounded text-sm font-semibold transition-colors"><Edit size={16}/> Rename Track</button>
                     <button onClick={handleSetIcon} className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-gray-200 hover:bg-[#37474F] hover:text-white rounded text-sm font-semibold transition-colors"><Palette size={16}/> Set Icon</button>
                     
+                    {track.audioBuffer && (
+                        <button onClick={handleDetectTempo} className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-gray-200 hover:bg-[#37474F] hover:text-white rounded text-sm font-semibold transition-colors">
+                            <Wand2 size={16}/> Detect Tempo
+                        </button>
+                    )}
+
                     <div className="px-3 pt-2 pb-1 text-sm font-semibold text-gray-400">Set Color</div>
                     <div className="grid grid-cols-6 gap-2 px-3 pb-2">
                         {TRACK_COLORS.map(color => (

@@ -1,21 +1,27 @@
-# 🎹 Simple Clip Launcher
+# 🎹 Stem Player & Mixer
 
-A professional-grade, cross-platform audio clip launcher and mixer built with **React**, **TypeScript**, and the **Web Audio API**. 
+A professional-grade, cross-platform stem player and audio mixer built with **React**, **TypeScript**, and the **Web Audio API**. This application was originally developed by **hicd07**.
 
-This application functions similarly to a hardware groovebox or the "Session View" in DAWs like Ableton Live. It supports audio playback, real-time effects, MIDI mapping, and hardware input/output routing. It is designed to run on the Web, Desktop (Electron), and Mobile (Capacitor/Android).
+This application functions as a digital audio workstation (DAW) focused on playing and mixing pre-recorded audio stems. It's ideal for producers who want to mix their multi-tracked songs, for live performers who need to play back-synced tracks, or for anyone wanting to deconstruct and work with song stems. It is designed to run on the Web, Desktop (Electron), and Mobile (Capacitor/Android).
 
 ## ✨ Features
 
-*   **Clip Launching:** 32-pad grid (2 banks of 16) with drag-and-drop sample loading.
-*   **Playback Modes:** One-Shot, Loop, and Gate (Trigger/Release).
-*   **Real-time FX:** Per-pad effects chain including Reverb, Filter (Low-pass), Delay, Flanger, and Chorus.
-*   **Non-destructive Editing:** Waveform visualizer with start/end trim points.
-*   **Mixer View:** Dedicated faders, panning (future), dry/wet FX sends, and specific hardware output routing per channel.
-*   **MIDI Mapping:** "Learn" mode to map MIDI controllers to pads, faders, and knobs.
+*   **Multi-track Playlist View:** A timeline-based interface to arrange and visualize your audio stems.
+    *   Displays audio waveforms for each track.
+    *   Supports horizontal (time) and vertical (track height) zooming.
+    *   Easy drag-and-drop loading of audio files directly onto tracks.
+*   **Full-featured Mixer:** A dedicated mixer view for fine-tuning your sound.
+    *   Per-track controls for Volume, Pan, Mute, and Solo.
+    *   Hardware output routing for each track, allowing for complex setups (e.g., sending a click track to a specific output).
+    *   Clipping indicators to monitor audio levels.
+*   **Real-time FX:** A per-track effects chain including Reverb, Low-Pass Filter, Delay, Flanger, and Chorus.
+*   **Non-destructive Editing:** Waveform visualizer with start/end trim points for each clip.
+*   **MIDI Mapping:** An intuitive "Learn" mode to map MIDI controller knobs, faders, and buttons to controls like volume, pan, mute, and solo.
 *   **Audio Recording:**
-    *   **Global:** Record the master output.
-    *   **Clip:** Record microphone/line-in directly to a pad.
-*   **Project Management:** Save and Load full projects (including audio samples) via `.zip`.
+    *   **Global:** Record the master output mix.
+    *   **Track:** Record an external audio source (microphone/line-in) directly onto a track.
+*   **Advanced Transport:** Global controls for Play/Pause, Stop, Loop, and BPM. Includes a highly configurable metronome with multiple sounds and dedicated output routing.
+*   **Project Management:** Save and Load entire projects, including audio samples, track settings, and MIDI mappings, into a single `.zip` file for easy portability.
 
 ## 🛠 Tech Stack
 
@@ -80,14 +86,20 @@ npm run android:build
 ```text
 /
 ├── components/          # React UI Components
-│   ├── AudioEditor.tsx  # Waveform visualization and trimming
+│   ├── PlaylistView.tsx # Main timeline/arrangement view
+│   ├── MixerStrip.tsx   # Channel strip (Volume, Pan, FX, Routing)
+│   ├── Track.tsx        # Track header in the playlist view
 │   ├── Knob.tsx         # SVG-based rotary control
-│   ├── MixerStrip.tsx   # Channel strip (Volume, FX, Routing)
-│   └── Pad.tsx          # Grid button behavior and status
+│   └── VerticalFader.tsx# Fader control for volume
 ├── electron/            # Electron main process files
 ├── services/
 │   └── audioEngine.ts   # SINGLETON: Core Web Audio API logic
-├── App.tsx              # Main Application Container & State Manager
+├── contexts/
+|   └── AppContext.tsx   # Global state management (React Context + useReducer)
+├── hooks/               # Custom React hooks
+│   ├── useAudioEngine.ts# Connects React state to the Audio Engine
+│   └── useTransport.ts  # Handles playback logic and timeline updates
+├── App.tsx              # Main Application Container & Layout
 ├── types.ts             # TypeScript Interfaces & Enums
 └── index.html           # Entry point
 ```
@@ -96,20 +108,20 @@ npm run android:build
 
 The core logic resides in `services/audioEngine.ts`. This is a Singleton class that wraps the browser's `AudioContext`.
 
-*   **State Management:** React manages the UI state (`pads`, `transport`), while `AudioEngine` manages the imperative Audio Node graph.
+*   **State Management:** React (`AppContext.tsx`) manages the UI state (`tracks`, `transport`), while `AudioEngine` manages the imperative Audio Node graph.
 *   **Routing:**
-    *   `SourceNode` -> `Dry/Wet Nodes` -> `Channel Gain` -> `Master Gain` -> `Destination`.
-    *   **Hardware Routing:** Uses `setSinkId` (where supported) to route specific pads to specific audio interface outputs (e.g., for click tracks or cueing).
+    *   `AudioBufferSourceNode` -> `Effects Chain` -> `Channel Gain/Pan` -> `Master Gain` -> `Destination`.
+    *   **Hardware Routing:** Uses `setSinkId` (where supported) on dedicated `<audio>` elements to route specific tracks to different physical audio interface outputs.
 *   **Metronome:** Implemented using a look-ahead scheduler (`setTimeout` + `ctx.currentTime`) to ensure tight timing regardless of the main thread load.
-*   **Recording:** Uses `MediaStreamDestination` and `MediaRecorder` API.
+*   **Recording:** Uses `MediaStreamDestinationNode` and the `MediaRecorder` API.
 
 ## 🎛 MIDI Implementation
 
-MIDI logic is handled in `App.tsx` via `navigator.requestMIDIAccess`.
+MIDI logic is handled in `AppContext.tsx` via `navigator.requestMIDIAccess`.
 
-*   **Architecture:** The app maintains a `isMidiMappingMode` state.
-*   **Mapping:** When active, clicking a UI element sets a `mappingTarget`. The next incoming MIDI message (NoteOn or CC) is bound to that target in the Pad's state data.
-*   **Playback:** Incoming MIDI messages are routed to `audioEngine.playPad` or state updaters (Volume/FX) based on the stored mapping configuration.
+*   **Architecture:** The app maintains a `isMidiLearn` state.
+*   **Mapping:** When active, clicking a UI element (like a fader or knob) sets a `mappingTarget`. The next incoming MIDI CC message is then bound to that target.
+*   **Playback:** Incoming MIDI messages are checked against the stored mappings and dispatch state updates (e.g., for Volume/Pan) accordingly.
 
 ## 🤝 Contributing
 
@@ -122,11 +134,15 @@ Collaborations are welcome! Please follow these steps:
 5.  Open a **Pull Request**.
 
 ### TODOs / Roadmap
-*   [ ] Add Pan controls to the Mixer.
 *   [ ] Implement "Piano Roll" or Sequencer view.
 *   [ ] Add Master Bus limiter visualizer.
 *   [ ] Improve iOS support (Audio Context unlocking).
+*   [ ] Add more real-time effects (e.g., Compressor, EQ per track).
 
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
+## 🙏 Acknowledgements
+
+This project was developed by **hicd07**.

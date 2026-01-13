@@ -40,39 +40,71 @@ const TrackLane: React.FC<{
   const drawCanvas = (buffer: AudioBuffer | null, canvas: HTMLCanvasElement, pxPerSec: number, height: number) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const width = canvas.width;
+    ctx.clearRect(0, 0, width, height);
+
+    if (!buffer) return;
+
+    // --- Define Clip Boundaries ---
+    const clipStartSec = data.trimStart || 0;
+    const clipEndSec = data.trimEnd > 0 ? data.trimEnd : buffer.duration;
     
-    ctx.clearRect(0, 0, canvas.width, height);
-    if (buffer) {
-        const channelData = buffer.getChannelData(0);
-        
-        const clipStart = data.trimStart || 0;
-        const clipEnd = data.trimEnd && data.trimEnd > 0 ? data.trimEnd : buffer.duration;
-        const clipDuration = clipEnd - clipStart;
+    const clipStartPx = Math.floor(clipStartSec * pxPerSec);
+    const clipEndPx = Math.floor(clipEndSec * pxPerSec);
+    const clipWidthPx = clipEndPx - clipStartPx;
 
-        const waveformWidthInPixels = Math.floor(clipDuration * pxPerSec);
-        const startOffsetInClip = Math.floor(clipStart * buffer.sampleRate);
-        const endOffsetInClip = Math.floor(clipEnd * buffer.sampleRate);
-        const samplesToDraw = endOffsetInClip - startOffsetInClip;
+    // --- Draw Clip Background & Border ---
+    const region = new Path2D();
+    region.rect(clipStartPx, 0, clipWidthPx, height);
+    ctx.fillStyle = hexToRgba(data.color, 0.2); // Slightly more opaque fill
+    ctx.fill(region);
+    ctx.strokeStyle = data.color;
+    ctx.lineWidth = selected ? 2 : 1;
+    ctx.stroke(region);
+    
+    // --- Draw Waveform ---
+    const channelData = buffer.getChannelData(0);
+    const sampleRate = buffer.sampleRate;
+    const centerY = height / 2;
+    const amp = centerY * 0.95; // Use 95% of half-height for amplitude
 
-        const startX = Math.floor(clipStart * pxPerSec);
-        const amp = (height / 2) * 0.9;
-        ctx.fillStyle = data.color;
+    const samplesPerPixel = sampleRate / pxPerSec;
+    const clipStartSample = Math.floor(clipStartSec * sampleRate);
 
-        const rectWidth = 1;
-        for (let i = 0; i < waveformWidthInPixels; i+= rectWidth) {
-            const sampleIndex = startOffsetInClip + Math.floor((i / waveformWidthInPixels) * samplesToDraw);
-            const sample = channelData[sampleIndex];
-            const y = (1 - sample) * amp;
-            ctx.fillRect(startX + i, y, rectWidth, rectWidth);
-        }
+    ctx.fillStyle = selected ? hexToRgba(data.color, 0.9) : hexToRgba(data.color, 0.7);
 
-        const region = new Path2D();
-        region.rect(startX, 0, waveformWidthInPixels, height);
-        ctx.strokeStyle = data.color;
-        ctx.lineWidth = selected ? 2 : 1;
-        ctx.stroke(region);
-        ctx.fillStyle = hexToRgba(data.color, 0.15);
-        ctx.fill(region);
+    // Optimized drawing loop: find min/max sample for each pixel column
+    for (let x = 0; x < clipWidthPx; x++) {
+      const sampleStartIndex = Math.floor(clipStartSample + (x * samplesPerPixel));
+      
+      // Ensure we don't read past the buffer
+      if (sampleStartIndex >= channelData.length) break;
+
+      const sampleEndIndex = Math.min(Math.floor(sampleStartIndex + samplesPerPixel), channelData.length);
+      
+      let min = 1.0;
+      let max = -1.0;
+      
+      // When zoomed out, find min/max peak. When zoomed in, this loop will run for few or zero iterations.
+      for (let i = sampleStartIndex; i < sampleEndIndex; i++) {
+        const sample = channelData[i];
+        if (sample < min) min = sample;
+        if (sample > max) max = sample;
+      }
+      
+      // Fallback for extreme zoom-in (where loop doesn't run) or for silent sections
+      if (min === 1.0 && max === -1.0) {
+        const sample = channelData[sampleStartIndex] || 0;
+        min = sample;
+        max = sample;
+      }
+
+      const yMax = centerY - (max * amp);
+      const yMin = centerY - (min * amp);
+      const rectHeight = Math.max(1, yMin - yMax); // Ensure at least 1px height
+      
+      ctx.fillRect(clipStartPx + x, yMax, 1, rectHeight);
     }
   };
 
