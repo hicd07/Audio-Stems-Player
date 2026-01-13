@@ -1,0 +1,53 @@
+{
+  "name": "simple-clip-launcher",
+  "version": "1.0.0",
+  "description": "A professional-grade MIDI clip launcher",
+  "main": "electron/main.js",
+  "author": "User",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "vite",
+    "electron:build": "npm run build && electron-builder",
+    "android:init": "npm run build && npx cap add android && node scripts/update-android-manifest.js",
+    "android:build": "npm run build && npx cap sync android && npx cap open android",
+    "android:apk": "node scripts/build-apk.js"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.5"
+  },
+  "build": {
+    "appId": "com.simplecliplauncher.app",
+    "productName": "Simple Clip Launcher",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

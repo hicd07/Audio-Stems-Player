@@ -1,0 +1,36 @@
+@echo off
+echo ==========================================
+echo Starting Windows (Electron) Build Process
+echo ==========================================
+
+if not exist node_modules (
+    echo [!] node_modules not found. Installing dependencies...
+    call npm install
+    if %errorlevel% neq 0 (
+        echo npm install failed. Exiting.
+        pause
+        exit /b %errorlevel%
+    )
+)
+
+echo [1/2] Building Web Assets (Vite)...
+call npm run build
+if %errorlevel% neq 0 (
+    echo Build failed. Exiting.
+    pause
+    exit /b %errorlevel%
+)
+
+echo [2/2] Packaging for Windows (Electron Builder)...
+call npm run electron:build
+if %errorlevel% neq 0 (
+    echo Packaging failed. Exiting.
+    pause
+    exit /b %errorlevel%
+)
+
+echo ==========================================
+echo Build Complete!
+echo Installers are located in the 'dist_electron' folder.
+echo ==========================================
+pause

@@ -1,0 +1,8 @@
+{
+  "appId": "com.simplecliplauncher.app",
+  "appName": "Simple Clip Launcher",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

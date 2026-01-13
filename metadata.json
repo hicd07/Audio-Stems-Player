@@ -1,0 +1,7 @@
+{
+  "name": "Audio Sequence Launcher",
+  "description": "A professional-grade MIDI clip launcher and mixer with real-time effects, audio recording, and drag-and-drop sample loading.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

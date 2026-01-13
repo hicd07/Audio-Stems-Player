@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+dist_electron/
+npm-debug.log
+
+# System
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Capacitor / Android
+# Keep the android folder, but ignore builds and local config
+android/app/build/
+android/.gradle/
+android/local.properties
+android/*.iml
+android/.idea/
+android/captures/
+
+# TypeScript
+*.tsbuildinfo
