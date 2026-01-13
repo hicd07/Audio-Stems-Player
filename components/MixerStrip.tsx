@@ -9,8 +9,7 @@ interface MixerStripProps {
   channelNumber: number;
 }
 
-const panSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
-const volumeSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.8, 0.875, 1]; // 0.8 is a common default
+const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
 
 const MixerStrip: React.FC<MixerStripProps> = ({ 
     track,
@@ -90,7 +89,6 @@ const MixerStrip: React.FC<MixerStripProps> = ({
                 onDoubleClick={() => handleVolumeChange(0.8)}
                 color={track.color}
                 disabled={isMidiLearn}
-                snapPoints={volumeSnapPoints}
             />
         </div>
       </div>

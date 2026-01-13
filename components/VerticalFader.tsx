@@ -6,11 +6,9 @@ interface VerticalFaderProps {
   onDoubleClick?: () => void;
   color?: string;
   disabled?: boolean;
-  snapPoints?: number[];
-  snapThreshold?: number;
 }
 
-const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDoubleClick, color, disabled = false, snapPoints, snapThreshold = 0.05 }) => {
+const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDoubleClick, color, disabled = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
@@ -23,26 +21,8 @@ const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDouble
     let newValue = (rect.bottom - clientY) / rect.height;
     newValue = Math.max(0, Math.min(1, newValue)); // Clamp value
 
-    // Snapping logic
-    if (snapPoints && snapPoints.length > 0) {
-        let closestPoint = -1;
-        let minDistance = Infinity;
-
-        for (const point of snapPoints) {
-            const distance = Math.abs(newValue - point);
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestPoint = point;
-            }
-        }
-        
-        if (closestPoint !== -1 && minDistance < snapThreshold) {
-            newValue = closestPoint;
-        }
-    }
-
     onChange(newValue);
-  }, [onChange, snapPoints, snapThreshold]);
+  }, [onChange]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;

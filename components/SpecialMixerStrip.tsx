@@ -16,8 +16,7 @@ interface SpecialMixerStripProps {
   isMetronome?: boolean;
 }
 
-const panSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
-const volumeSnapPoints = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.8, 0.875, 1];
+const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
 const panColor = "#fbbf24";
 
 const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
@@ -74,7 +73,6 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
             onChange={onVolumeChange}
             onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)}
             color={color}
-            snapPoints={volumeSnapPoints}
         />
       </div>
 
