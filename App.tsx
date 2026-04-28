@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Square, Pause, Repeat, Settings, Keyboard, Triangle, HardDriveUpload, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Play, Square, Pause, Repeat, Settings, Keyboard, Triangle, HardDriveUpload, PanelLeftOpen, PanelLeftClose, Fingerprint } from 'lucide-react';
 import PlaylistView from './components/PlaylistView';
 import MixerStrip from './components/MixerStrip';
 import SettingsModal from './components/Settings';
@@ -8,6 +8,7 @@ import MetronomeSettingsModal from './components/MetronomeSettingsModal';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import useAudioEngine from './hooks/useAudioEngine';
 import useTransport from './hooks/useTransport';
+import { useTapTempo } from './hooks/useTapTempo';
 
 const AppContent: React.FC = () => {
     const { state, dispatch } = useAppContext();
@@ -15,6 +16,10 @@ const AppContent: React.FC = () => {
 
     useAudioEngine();
     const { handlePlayPause, stopAll } = useTransport();
+    
+    const { tap } = useTapTempo((bpm) => {
+        dispatch({ type: 'SET_TRANSPORT', payload: { ...transport, bpm } });
+    });
 
     const metronomePressTimer = React.useRef<number | null>(null);
 
@@ -69,6 +74,12 @@ const AppContent: React.FC = () => {
 
                     {/* Tempo & Metronome */}
                     <div className="flex items-center bg-[#252E32] p-1 rounded-lg border border-black/30 shadow-inner">
+                        <button 
+                            onClick={tap}
+                            className="px-3 py-1 mr-2 text-[10px] font-black bg-cyan-600 hover:bg-cyan-500 text-white rounded shadow-sm transition-colors uppercase"
+                        >
+                            Tap
+                        </button>
                         <input 
                             type="number" 
                             step="0.01" 
