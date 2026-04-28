@@ -49,10 +49,16 @@ const useAudioEngine = () => {
     useEffect(() => { audioEngine.setMetronomeOutputDevice(metronomeOutputId); }, [metronomeOutputId]);
     useEffect(() => { audioEngine.setMasterOutputDevice(masterOutputId); }, [masterOutputId]);
     
-    // Sync individual track volumes/pans
+    // Sync individual track volumes/pans, accounting for mute and solo
     useEffect(() => {
+        const hasSolo = tracks.some(t => t.isSolo);
+        
         tracks.forEach(track => {
-            audioEngine.setTrackVolume(track.id, track.volume);
+            // A track is effectively muted if it's explicitly muted OR if another track is soloed and this one is not.
+            const isEffectivelyMuted = track.isMuted || (hasSolo && !track.isSolo);
+            const effectiveVolume = isEffectivelyMuted ? 0 : track.volume;
+            
+            audioEngine.setTrackVolume(track.id, effectiveVolume);
             audioEngine.setTrackPan(track.id, track.pan);
         });
     }, [tracks]);

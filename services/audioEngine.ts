@@ -249,11 +249,14 @@ class AudioEngine {
   startPlayback(tracks: TrackData[], onEnded: (id: number) => void, loop: boolean, offset: number = 0) {
     this.stopAll(false); // Stop previous playback without clearing nodes
 
-    const soloTracks = tracks.filter(t => t.isSolo);
-    const tracksToPlay = soloTracks.length > 0 ? soloTracks : tracks;
+    const hasSolo = tracks.some(t => t.isSolo);
 
-    tracksToPlay.forEach(track => {
-      if (!track.audioBuffer || track.isMuted) return;
+    tracks.forEach(track => {
+      if (!track.audioBuffer) return;
+
+      // Calculate initial effective volume
+      const isActuallyMuted = track.isMuted || (hasSolo && !track.isSolo);
+      const initialVol = isActuallyMuted ? 0 : track.volume;
 
       const source = this.ctx.createBufferSource();
       source.buffer = track.audioBuffer;
@@ -264,7 +267,7 @@ class AudioEngine {
       
       const effectiveOffset = Math.max(0, offset);
 
-      if (effectiveOffset >= duration) return; // Don't play if start time is past the end of the clip
+      if (effectiveOffset >= duration) return; 
 
       source.loop = loop;
       if (loop) {
@@ -275,9 +278,6 @@ class AudioEngine {
       source.start(0, start + effectiveOffset, loop ? undefined : duration - effectiveOffset);
 
       // Re-create or re-connect nodes for this track
-      const gainNode = this.ctx.createGain();
-      gainNode.gain.value = track.volume;
-      
       const dryGain = this.ctx.createGain();
       const wetGain = this.ctx.createGain();
       const outGain = this.ctx.createGain(); 
@@ -324,7 +324,7 @@ class AudioEngine {
       const mix = track.effect.dryWet;
       dryGain.gain.value = 1 - mix;
       wetGain.gain.value = mix;
-      outGain.gain.value = track.volume; 
+      outGain.gain.value = initialVol; 
 
       this.sources.set(track.id, source);
       this.gainNodes.set(track.id, outGain); 
