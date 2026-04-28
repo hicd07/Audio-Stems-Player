@@ -123,15 +123,12 @@ const AppContent: React.FC = () => {
             <main className="flex-1 relative overflow-hidden bg-[#2B3539]">
                 {viewMode === 'PLAYLIST' && <PlaylistView />}
                 {viewMode === 'MIXER' && (
-                    <div className="h-full overflow-x-auto overflow-y-hidden p-inline-4 p-block-4 scroll-smooth">
-                        <div className="flex h-full min-w-max gap-4 items-start">
-                            {/* Dynamic Track Grid */}
-                            <div className="flex h-full gap-2 mixer-grid">
+                    <div className="mixer-viewport">
+                        <div className="mixer-layout-container">
+                            <div className="mixer-tracks-grid">
                                 {tracks.map((track, index) => <MixerStrip key={track.id} track={track} channelNumber={index + 1} />)}
                             </div>
-                            
-                            {/* Fixed Bus Controls */}
-                            <div className="flex h-full gap-2 border-l border-black/30 p-inline-start-4">
+                            <div className="mixer-bus-grid">
                                 <SpecialMixerStrip 
                                     name="Metronome" 
                                     volume={metronomeVolume} 
