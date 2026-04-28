@@ -42,14 +42,14 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
 
   return (
     <div 
-      className="flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 min-w-[100px] h-full bg-[#37474F] shadow-2xl"
+      className="flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 min-w-[100px] max-w-[140px] h-full bg-[#37474F] shadow-2xl"
       style={{ borderColor: color }}
     >
-      <div className="text-center w-full mb-4">
+      <div className="text-center w-full mb-4 flex-none">
         <div className="text-[10px] font-black tracking-widest uppercase mb-1" style={{ color }}>{name}</div>
       </div>
       
-      <div className="h-[80px] flex flex-col items-center justify-center">
+      <div className="h-[80px] flex flex-col items-center justify-center flex-none">
         {typeof pan !== 'undefined' && onPanChange ? (
           <>
             <Knob 
@@ -66,19 +66,21 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
         ) : <div className="h-full" />}
       </div>
 
-      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4">
-        <VerticalFader 
-            value={volume}
-            onChange={onVolumeChange}
-            onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)}
-            color={color}
-        />
-        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner">
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4 min-h-0 overflow-hidden">
+        <div className="h-full max-h-[300px] flex items-center justify-center">
+            <VerticalFader 
+                value={volume}
+                onChange={onVolumeChange}
+                onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)}
+                color={color}
+            />
+        </div>
+        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner flex-none">
             {Math.round(volume * 100)}%
         </div>
       </div>
 
-      <div className="w-full p-inline-1 h-[28px]">
+      <div className="w-full p-inline-1 h-[28px] flex-none">
         {isMetronome && onOutputChange ? (
           <select 
             value={outputId || ''} 

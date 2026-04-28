@@ -39,11 +39,11 @@ const MixerStrip: React.FC<MixerStripProps> = ({
 
   return (
     <div 
-      className={`flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 transition-all duration-200 min-w-[100px] h-full shadow-lg ${isSelected ? 'bg-[#546E7A] border-cyan-400 -translate-y-1' : 'bg-[#37474F] border-transparent'}`}
+      className={`flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 transition-all duration-200 min-w-[100px] max-w-[140px] h-full shadow-lg ${isSelected ? 'bg-[#546E7A] border-cyan-400 -translate-y-1' : 'bg-[#37474F] border-transparent'}`}
       onClick={() => dispatch({ type: 'SET_SELECTED_TRACK', payload: track.id })}
     >
       {/* Track Header */}
-      <div className="text-center w-full mb-3">
+      <div className="text-center w-full mb-3 flex-none">
         <div className="text-[10px] font-black text-gray-400 tracking-tighter uppercase mb-1">CH {channelNumber}</div>
         <div className="text-xs font-bold truncate p-inline-1 rounded" style={{ color: track.color, backgroundColor: 'rgba(0,0,0,0.2)' }}>
           {track.name}
@@ -51,11 +51,11 @@ const MixerStrip: React.FC<MixerStripProps> = ({
       </div>
 
       {/* Meter / Peak */}
-      <div className={`w-3 h-3 rounded-full mb-4 shadow-inner transition-colors duration-75 ${track.isClipping ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-black/40'}`}></div>
+      <div className={`w-3 h-3 rounded-full mb-4 flex-none shadow-inner transition-colors duration-75 ${track.isClipping ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-black/40'}`}></div>
 
       {/* Pan Knob */}
       <div 
-          className={`relative group p-2 rounded-lg transition-all ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('pan') ? 'outline outline-2 outline-yellow-400 animate-pulse' : 'hover:bg-black/10'}`}
+          className={`relative group p-2 rounded-lg transition-all flex-none ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('pan') ? 'outline outline-2 outline-yellow-400 animate-pulse' : 'hover:bg-black/10'}`}
           onMouseDown={(e) => { e.stopPropagation(); handleSetMappingTarget('pan'); }}
       >
           <Knob 
@@ -70,10 +70,10 @@ const MixerStrip: React.FC<MixerStripProps> = ({
           <div className="text-[9px] font-mono text-center text-gray-400 mt-1 font-bold">{formatPan(track.pan)}</div>
       </div>
 
-      {/* Volume Fader */}
-      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4">
+      {/* Volume Fader Area */}
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4 min-h-0 overflow-hidden">
         <div 
-            className={`h-full flex items-center justify-center ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 animate-pulse rounded-lg' : ''}`}
+            className={`h-full max-h-[300px] flex items-center justify-center ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 animate-pulse rounded-lg' : ''}`}
             onMouseDown={(e) => {
                 if (isMidiLearn) {
                     e.stopPropagation();
@@ -89,13 +89,13 @@ const MixerStrip: React.FC<MixerStripProps> = ({
                 disabled={isMidiLearn}
             />
         </div>
-        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner">
+        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner flex-none">
             {Math.round(track.volume * 100)}%
         </div>
       </div>
 
       {/* Output Routing Select */}
-      <div className="w-full p-inline-1">
+      <div className="w-full p-inline-1 flex-none">
           <select 
               value={track.outputDeviceId || ''} 
               onChange={(e) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { outputDeviceId: e.target.value } } })} 

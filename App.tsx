@@ -123,28 +123,33 @@ const AppContent: React.FC = () => {
             <main className="flex-1 relative overflow-hidden bg-[#2B3539]">
                 {viewMode === 'PLAYLIST' && <PlaylistView />}
                 {viewMode === 'MIXER' && (
-                    <div className="h-full p-4 overflow-x-auto overflow-y-hidden flex items-start gap-4 scroll-smooth">
-                        <div className="flex gap-2 h-full mixer-grid">
-                            {tracks.map((track, index) => <MixerStrip key={track.id} track={track} channelNumber={index + 1} />)}
-                        </div>
-                        <div className="flex gap-2 h-full border-l border-black/30 pl-4">
-                            <SpecialMixerStrip 
-                                name="Metronome" 
-                                volume={metronomeVolume} 
-                                onVolumeChange={vol => dispatch({ type: 'SET_METRONOME_VOLUME', payload: vol })} 
-                                pan={metronomePan} 
-                                onPanChange={pan => dispatch({ type: 'SET_METRONOME_PAN', payload: pan })} 
-                                color="#26C6DA" 
-                                outputId={metronomeOutputId} 
-                                onOutputChange={id => dispatch({ type: 'SET_METRONOME_OUTPUT', payload: id })} 
-                                isMetronome={true} 
-                            />
-                            <SpecialMixerStrip 
-                                name="Master" 
-                                volume={masterVolume} 
-                                onVolumeChange={vol => dispatch({ type: 'SET_MASTER_VOLUME', payload: vol })} 
-                                color="#90A4AE" 
-                            />
+                    <div className="h-full overflow-x-auto overflow-y-hidden p-inline-4 p-block-4 scroll-smooth">
+                        <div className="flex h-full min-w-max gap-4 items-start">
+                            {/* Dynamic Track Grid */}
+                            <div className="flex h-full gap-2 mixer-grid">
+                                {tracks.map((track, index) => <MixerStrip key={track.id} track={track} channelNumber={index + 1} />)}
+                            </div>
+                            
+                            {/* Fixed Bus Controls */}
+                            <div className="flex h-full gap-2 border-l border-black/30 p-inline-start-4">
+                                <SpecialMixerStrip 
+                                    name="Metronome" 
+                                    volume={metronomeVolume} 
+                                    onVolumeChange={vol => dispatch({ type: 'SET_METRONOME_VOLUME', payload: vol })} 
+                                    pan={metronomePan} 
+                                    onPanChange={pan => dispatch({ type: 'SET_METRONOME_PAN', payload: pan })} 
+                                    color="#26C6DA" 
+                                    outputId={metronomeOutputId} 
+                                    onOutputChange={id => dispatch({ type: 'SET_METRONOME_OUTPUT', payload: id })} 
+                                    isMetronome={true} 
+                                />
+                                <SpecialMixerStrip 
+                                    name="Master" 
+                                    volume={masterVolume} 
+                                    onVolumeChange={vol => dispatch({ type: 'SET_MASTER_VOLUME', payload: vol })} 
+                                    color="#90A4AE" 
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
