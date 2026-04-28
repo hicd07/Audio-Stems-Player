@@ -1,7 +1,8 @@
+"use client";
+
 import React from 'react';
 import Knob from './Knob';
 import VerticalFader from './VerticalFader';
-import { AudioDeviceInfo } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
 interface SpecialMixerStripProps {
@@ -16,8 +17,7 @@ interface SpecialMixerStripProps {
   isMetronome?: boolean;
 }
 
-const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
-const panColor = "#fbbf24";
+const panSnapPoints = [0, 0.25, 0.5, 0.75, 1];
 
 const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
     name,
@@ -32,7 +32,6 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
 }) => {
   const { state } = useAppContext();
   const { outputDevices, enabledAudioOutputDevices } = state;
-
   const enabledOutputDevicesList = React.useMemo(() => outputDevices.filter(d => enabledAudioOutputDevices.has(d.deviceId)), [outputDevices, enabledAudioOutputDevices]);
 
   const formatPan = (panVal: number) => {
@@ -43,55 +42,54 @@ const SpecialMixerStrip: React.FC<SpecialMixerStripProps> = ({
 
   return (
     <div 
-      className="flex flex-col items-center p-2 rounded-lg border-2 min-w-[90px] h-full justify-between py-2 relative transition-colors bg-[#37474F]"
+      className="flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 min-w-[100px] h-full bg-[#37474F] shadow-2xl"
       style={{ borderColor: color }}
     >
-      <div className="text-center mb-1 w-full">
-        <div className="text-xs font-bold mb-1 tracking-wider" style={{ color }}>{name.toUpperCase()}</div>
+      <div className="text-center w-full mb-4">
+        <div className="text-[10px] font-black tracking-widest uppercase mb-1" style={{ color }}>{name}</div>
       </div>
       
-      <div className="flex justify-center items-start w-full my-3 h-[70px]">
+      <div className="h-[80px] flex flex-col items-center justify-center">
         {typeof pan !== 'undefined' && onPanChange ? (
-          <div className="flex flex-col items-center">
+          <>
             <Knob 
                 value={(pan + 1) / 2}
                 onChange={(val) => onPanChange((val * 2) - 1)}
                 onDoubleClick={() => onPanChange(0.0)}
                 label="PAN"
-                color={panColor}
-                size={40}
+                color="#FBC02D"
+                size={44}
                 snapPoints={panSnapPoints}
             />
-            <span className="text-[10px] font-mono text-gray-400 mt-1">{formatPan(pan)}</span>
-          </div>
-        ) : <div className="w-full h-full"></div> /* Spacer */}
+            <span className="text-[9px] font-mono text-gray-400 mt-1 font-bold">{formatPan(pan)}</span>
+          </>
+        ) : <div className="h-full" />}
       </div>
 
-      <div className="flex-1 w-full py-1 flex justify-center items-center">
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4">
         <VerticalFader 
             value={volume}
             onChange={onVolumeChange}
             onDoubleClick={() => onVolumeChange(name === 'Master' ? 0.8 : 0.5)}
             color={color}
         />
+        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner">
+            {Math.round(volume * 100)}%
+        </div>
       </div>
 
-      <div className="mt-1 text-xs font-mono text-gray-300 mb-2">{Math.round(volume * 100)}%</div>
-      
-      {isMetronome && onOutputChange && (
-        <div className="w-full">
+      <div className="w-full p-inline-1 h-[28px]">
+        {isMetronome && onOutputChange ? (
           <select 
             value={outputId || ''} 
             onChange={(e) => onOutputChange(e.target.value)} 
-            className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded border border-black/20 focus:border-green-400 p-1 truncate"
-            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded-md border border-black/30 p-1 font-bold shadow-inner appearance-none text-center"
           >
-              <option value="">Master</option>
-              {enabledOutputDevicesList.map(d => (<option key={d.deviceId} value={d.deviceId}>{d.label.substring(0, 10)}...</option>))}
+              <option value="">MASTER</option>
+              {enabledOutputDevicesList.map(d => (<option key={d.deviceId} value={d.deviceId}>{d.label.substring(0, 10)}</option>))}
           </select>
-        </div>
-      )}
-      {!isMetronome && <div className="h-[25px]"></div>} 
+        ) : null}
+      </div>
     </div>
   );
 };

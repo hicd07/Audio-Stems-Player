@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, MoreVertical, GripVertical, Mic, Piano, Drum, Disc3, CircleDot, Music3, AudioWaveform } from 'lucide-react';
 import { MidiControl, TrackData as TrackDataType } from '../types';
@@ -47,56 +49,58 @@ const Track: React.FC<TrackProps> = ({ track, selected, trackHeight }) => {
         setIsEditing(false);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') handleCommit();
-        else if (e.key === 'Escape') {
-            setName(track.name);
-            setIsEditing(false);
-        }
-    };
-    
-    useEffect(() => { if (!isEditing) setName(track.name); }, [track.name, isEditing]);
-    
-    const handleSetMappingTarget = (control: MidiControl) => {
-        if (isMidiLearn) {
-            dispatch({ type: 'SET_MIDI_MAPPING_TARGET', payload: { trackId: track.id, control } });
-        }
-    };
-    
     const isTarget = (control: string) => midiMappingTarget?.trackId === track.id && midiMappingTarget?.control === control;
-
-    const handleSetIcon = (iconKey: string | null) => {
-        dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { icon: iconKey || undefined } } });
-        setIsIconModalOpen(false);
-    };
-
     const CurrentIcon = (track.icon && TRACK_ICONS[track.icon]) ? TRACK_ICONS[track.icon] : GripVertical;
 
     return (
-        <>
-            <div 
-                style={{ height: trackHeight, boxSizing: 'content-box', background: selected ? '#546E7A' : '#37474F' }} 
-                className={`flex items-center justify-between px-2 cursor-pointer relative transition-colors duration-150 hover:bg-[#455A64]`} 
-                onClick={() => dispatch({ type: 'SET_SELECTED_TRACK', payload: track.id })} 
-            >
-                <div className="flex items-center overflow-hidden flex-1">
-                    <CurrentIcon size={14} className="mr-2 flex-shrink-0 text-gray-400" />
-                    <div className={`w-1.5 h-4 rounded-full mr-2 flex-shrink-0 transition-colors`} style={{backgroundColor: track.color}}></div>
-                    {isEditing ? (
-                        <input ref={inputRef} type="text" value={name} onChange={(e) => setName(e.target.value)} onBlur={handleCommit} onKeyDown={handleKeyDown} className="bg-[#2B3539] text-white w-full h-full p-0 border-0 outline-none text-xs font-semibold"/>
-                    ) : (
-                        <span className="truncate font-semibold" title={track.name}>{track.name}</span>
-                    )}
-                    {!track.audioBuffer && <Upload size={16} strokeWidth={2.5} className={`ml-2 flex-shrink-0 transition-colors ${selected ? 'text-cyan-300' : 'text-gray-500'}`} />}
+        <div 
+            style={{ height: trackHeight }} 
+            className={`track-header group flex items-center justify-between p-inline-2 cursor-pointer transition-all border-b border-black/20 ${selected ? 'bg-[#546E7A] shadow-inner' : 'bg-[#37474F] hover:bg-[#455A64]'}`}
+            onClick={() => dispatch({ type: 'SET_SELECTED_TRACK', payload: track.id })}
+        >
+            <div className="flex items-center gap-2 overflow-hidden flex-1">
+                <div className="flex items-center justify-center p-1 rounded-md bg-black/20 text-gray-400 group-hover:text-white transition-colors">
+                    <CurrentIcon size={14} />
                 </div>
-                <div className="flex items-center space-x-1 pl-1 z-10">
-                    <button onClick={(e) => { e.stopPropagation(); isMidiLearn ? handleSetMappingTarget('solo') : dispatch({ type: 'TOGGLE_SOLO', payload: track.id }); }} className={`btn w-5 h-5 rounded text-[10px] font-bold ${track.isSolo ? 'bg-yellow-500 text-black' : 'text-yellow-500'} ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('solo') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse' : ''}`}>S</button>
-                    <button onClick={(e) => { e.stopPropagation(); isMidiLearn ? handleSetMappingTarget('mute') : dispatch({ type: 'TOGGLE_MUTE', payload: track.id }); }} className={`btn w-5 h-5 rounded text-[10px] font-bold ${track.isMuted ? 'bg-blue-500 text-white' : 'text-blue-500'} ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('mute') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse' : ''}`}>M</button>
-                    <button onClick={(e) => { e.stopPropagation(); setIsMenuModalOpen(true); }} className="p-1 rounded text-gray-400 hover:text-white hover:bg-black/20 opacity-50 hover:opacity-100 transition-opacity">
-                        <MoreVertical size={14} />
-                    </button>
-                </div>
+                <div className="w-1.5 h-6 rounded-full shrink-0 shadow-sm" style={{backgroundColor: track.color}}></div>
+                
+                {isEditing ? (
+                    <input 
+                        ref={inputRef} 
+                        type="text" 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)} 
+                        onBlur={handleCommit} 
+                        onKeyDown={(e) => { if(e.key === 'Enter') handleCommit(); if(e.key === 'Escape') { setName(track.name); setIsEditing(false); } }} 
+                        className="bg-[#2B3539] text-white w-full p-inline-1 rounded border-none outline-none text-[11px] font-bold"
+                    />
+                ) : (
+                    <span className="truncate text-[11px] font-bold tracking-tight uppercase" title={track.name}>{track.name}</span>
+                )}
+                {!track.audioBuffer && <Upload size={14} className={`shrink-0 ${selected ? 'text-cyan-400' : 'text-gray-500'}`} />}
             </div>
+
+            <div className="flex items-center gap-1 p-inline-start-2">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); isMidiLearn ? dispatch({ type: 'SET_MIDI_MAPPING_TARGET', payload: { trackId: track.id, control: 'solo' } }) : dispatch({ type: 'TOGGLE_SOLO', payload: track.id }); }} 
+                    className={`w-7 h-7 flex items-center justify-center rounded-md text-[9px] font-black transition-all shadow-sm ${track.isSolo ? 'bg-yellow-500 text-black' : 'bg-black/20 text-yellow-500 hover:bg-black/40'} ${isTarget('solo') ? 'outline outline-2 outline-yellow-400 animate-pulse' : ''}`}
+                >
+                    S
+                </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); isMidiLearn ? dispatch({ type: 'SET_MIDI_MAPPING_TARGET', payload: { trackId: track.id, control: 'mute' } }) : dispatch({ type: 'TOGGLE_MUTE', payload: track.id }); }} 
+                    className={`w-7 h-7 flex items-center justify-center rounded-md text-[9px] font-black transition-all shadow-sm ${track.isMuted ? 'bg-blue-500 text-white' : 'bg-black/20 text-blue-500 hover:bg-black/40'} ${isTarget('mute') ? 'outline outline-2 outline-yellow-400 animate-pulse' : ''}`}
+                >
+                    M
+                </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setIsMenuModalOpen(true); }} 
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-black/10 text-gray-400 hover:text-white hover:bg-black/30 transition-all"
+                >
+                    <MoreVertical size={14} />
+                </button>
+            </div>
+
              {isMenuModalOpen && (
                 <TrackMenuModal 
                     track={track}
@@ -109,10 +113,10 @@ const Track: React.FC<TrackProps> = ({ track, selected, trackHeight }) => {
             {isIconModalOpen && (
                 <IconSelectionModal
                     onClose={() => setIsIconModalOpen(false)}
-                    onSelectIcon={handleSetIcon}
+                    onSelectIcon={(key) => { dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { icon: key || undefined } } }); setIsIconModalOpen(false); }}
                 />
             )}
-        </>
+        </div>
     );
 };
 

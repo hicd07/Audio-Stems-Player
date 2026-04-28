@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef, useCallback } from 'react';
 
 interface VerticalFaderProps {
@@ -12,22 +14,21 @@ const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDouble
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || disabled) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
     
-    // Calculate value from 0 (bottom) to 1 (top)
     let newValue = (rect.bottom - clientY) / rect.height;
-    newValue = Math.max(0, Math.min(1, newValue)); // Clamp value
+    newValue = Math.max(0, Math.min(1, newValue));
 
     onChange(newValue);
-  }, [onChange]);
+  }, [onChange, disabled]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;
     e.preventDefault();
-    e.stopPropagation(); // Prevent parent handlers
+    e.stopPropagation();
     handleInteraction(e);
 
     const onMouseMove = (moveEvent: MouseEvent) => handleInteraction(moveEvent);
@@ -55,15 +56,8 @@ const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDouble
     window.addEventListener('touchend', onTouchEnd);
   };
   
-  const onDoubleClickInternal = (e: React.MouseEvent) => {
-    if (disabled) return;
-    e.stopPropagation();
-    onDoubleClick?.();
-  }
-
-  const thumbHeight = 18; // Corresponds to CSS height
-  // Calculate thumb position from bottom. Value 0 = 0% from bottom. Value 1 = 100% - thumb height
-  const thumbBottomPosition = `calc(${value * 100}% - ${thumbHeight * value}px)`;
+  // Calculate thumb position: Value 1.0 (top) -> bottom = calc(100% - 18px)
+  const thumbBottomPosition = `calc(${value * 100}% - ${18 * value}px)`;
 
   return (
     <div 
@@ -71,11 +65,18 @@ const VerticalFader: React.FC<VerticalFaderProps> = ({ value, onChange, onDouble
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
-      onDoubleClick={onDoubleClickInternal}
-      style={{ cursor: disabled ? 'pointer' : 'ns-resize' }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.(); }}
+      style={{ cursor: disabled ? 'default' : 'ns-resize' }}
     >
       <div className="fader-track-bg" />
-      <div className="fader-fill" style={{ height: `${value * 100}%`, backgroundColor: color }} />
+      <div 
+        className="fader-fill" 
+        style={{ 
+            height: `${value * 100}%`, 
+            backgroundColor: color || '#90A4AE',
+            boxShadow: `0 0 10px ${color}44` 
+        }} 
+      />
       <div 
         className="fader-thumb"
         style={{ bottom: thumbBottomPosition }}

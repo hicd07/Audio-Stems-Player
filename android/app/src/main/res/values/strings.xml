@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Simple Clip Launcher</string>
+    <string name="title_activity_main">Simple Clip Launcher</string>
+    <string name="package_name">com.simplecliplauncher.app</string>
+    <string name="custom_url_scheme">com.simplecliplauncher.app</string>
+</resources>

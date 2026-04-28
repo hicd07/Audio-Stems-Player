@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import Knob from './Knob';
 import VerticalFader from './VerticalFader';
@@ -9,7 +11,7 @@ interface MixerStripProps {
   channelNumber: number;
 }
 
-const panSnapPoints = [0, 0.25, 0.5, 0.75, 1]; // 100L, 50L, C, 50R, 100R
+const panSnapPoints = [0, 0.25, 0.5, 0.75, 1];
 
 const MixerStrip: React.FC<MixerStripProps> = ({ 
     track,
@@ -33,49 +35,45 @@ const MixerStrip: React.FC<MixerStripProps> = ({
     return panVal < 0 ? `L${percent}` : `R${percent}`;
   };
 
-  const panColor = "#fbbf24";
-  
   const enabledOutputDevices = React.useMemo(() => outputDevices.filter(d => enabledAudioOutputDevices.has(d.deviceId)), [outputDevices, enabledAudioOutputDevices]);
-
-  const handlePanChange = (val: number) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { pan: (val * 2) - 1 } } });
-  const handleVolumeChange = (val: number) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { volume: val } } });
-  const handleOutputChange = (deviceId: string) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { outputDeviceId: deviceId } } });
 
   return (
     <div 
-      className={`flex flex-col items-center p-2 rounded-lg border-2 min-w-[90px] h-full justify-between py-2 relative transition-all duration-200 ${isSelected ? 'bg-[#546E7A] scale-105' : 'bg-[#37474F] border-transparent'}`}
-      style={{ borderColor: isSelected ? track.color : 'transparent' }}
+      className={`flex flex-col items-center p-inline-2 p-block-3 rounded-xl border-2 transition-all duration-200 min-w-[100px] h-full shadow-lg ${isSelected ? 'bg-[#546E7A] border-cyan-400 -translate-y-1' : 'bg-[#37474F] border-transparent'}`}
       onClick={() => dispatch({ type: 'SET_SELECTED_TRACK', payload: track.id })}
     >
-      <div className="text-center mb-1 w-full">
-        <div className="text-xs font-bold text-gray-300 mb-1">CH {channelNumber}</div>
-        <div className="text-[10px] font-bold truncate w-full px-1" style={{ color: track.color }}>{track.name}</div>
-      </div>
-
-      <div className={`h-2 w-2 mb-1 rounded-full transition-colors ${track.isClipping ? 'bg-red-500 shadow-[0_0_4px_1px_rgba(239,68,68,0.7)]' : 'bg-black/30'}`}></div>
-
-      <div className="flex justify-center items-start w-full my-3 h-[70px]">
-        <div 
-            className={`flex flex-col items-center p-1 rounded-md ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('pan') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse' : ''}`}
-            onMouseDown={(e) => { e.stopPropagation(); handleSetMappingTarget('pan'); }}
-        >
-            <Knob 
-                value={(track.pan + 1) / 2}
-                onChange={handlePanChange}
-                onDoubleClick={() => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { pan: 0 } } })}
-                label="PAN"
-                color={panColor}
-                size={40}
-                snapPoints={panSnapPoints}
-            />
-            <span className="text-[10px] font-mono text-gray-400 mt-1">{formatPan(track.pan)}</span>
+      {/* Track Header */}
+      <div className="text-center w-full mb-3">
+        <div className="text-[10px] font-black text-gray-400 tracking-tighter uppercase mb-1">CH {channelNumber}</div>
+        <div className="text-xs font-bold truncate p-inline-1 rounded" style={{ color: track.color, backgroundColor: 'rgba(0,0,0,0.2)' }}>
+          {track.name}
         </div>
       </div>
 
+      {/* Meter / Peak */}
+      <div className={`w-3 h-3 rounded-full mb-4 shadow-inner transition-colors duration-75 ${track.isClipping ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'bg-black/40'}`}></div>
 
-      <div className="flex-1 w-full py-1 flex justify-center items-center">
+      {/* Pan Knob */}
+      <div 
+          className={`relative group p-2 rounded-lg transition-all ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('pan') ? 'outline outline-2 outline-yellow-400 animate-pulse' : 'hover:bg-black/10'}`}
+          onMouseDown={(e) => { e.stopPropagation(); handleSetMappingTarget('pan'); }}
+      >
+          <Knob 
+              value={(track.pan + 1) / 2}
+              onChange={(val) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { pan: (val * 2) - 1 } } })}
+              onDoubleClick={() => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { pan: 0 } } })}
+              label="PAN"
+              color="#FBC02D"
+              size={48}
+              snapPoints={panSnapPoints}
+          />
+          <div className="text-[9px] font-mono text-center text-gray-400 mt-1 font-bold">{formatPan(track.pan)}</div>
+      </div>
+
+      {/* Volume Fader */}
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-block-4">
         <div 
-            className={`h-full ${isMidiLearn ? 'cursor-pointer' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 outline-offset-2 animate-pulse rounded-lg' : ''}`}
+            className={`h-full flex items-center justify-center ${isMidiLearn ? 'cursor-help' : ''} ${isTarget('volume') ? 'outline outline-2 outline-yellow-400 animate-pulse rounded-lg' : ''}`}
             onMouseDown={(e) => {
                 if (isMidiLearn) {
                     e.stopPropagation();
@@ -85,20 +83,29 @@ const MixerStrip: React.FC<MixerStripProps> = ({
         >
             <VerticalFader 
                 value={track.volume}
-                onChange={handleVolumeChange}
-                onDoubleClick={() => handleVolumeChange(0.8)}
+                onChange={(val) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { volume: val } } })}
+                onDoubleClick={() => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { volume: 0.8 } } })}
                 color={track.color}
                 disabled={isMidiLearn}
             />
         </div>
+        <div className="text-[10px] font-mono font-bold text-gray-300 mt-2 bg-black/30 p-inline-2 rounded shadow-inner">
+            {Math.round(track.volume * 100)}%
+        </div>
       </div>
 
-      <div className="mt-1 text-xs font-mono text-gray-300 mb-2">{Math.round(track.volume * 100)}%</div>
-      
-      <div className="w-full">
-          <select value={track.outputDeviceId || ''} onChange={(e) => handleOutputChange(e.target.value)} className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded border border-black/20 focus:border-cyan-400 p-1 truncate" onClick={(e) => e.stopPropagation()}>
-              <option value="">Master</option>
-              {enabledOutputDevices.map(d => (<option key={d.deviceId} value={d.deviceId}>{d.label.substring(0, 10)}...</option>))}
+      {/* Output Routing Select */}
+      <div className="w-full p-inline-1">
+          <select 
+              value={track.outputDeviceId || ''} 
+              onChange={(e) => dispatch({ type: 'UPDATE_TRACK', payload: { id: track.id, updates: { outputDeviceId: e.target.value } } })} 
+              className="w-full bg-[#2B3539] text-[9px] text-gray-300 rounded-md border border-black/30 focus:border-cyan-400 p-1 font-bold tracking-tight shadow-inner appearance-none text-center"
+              onClick={(e) => e.stopPropagation()}
+          >
+              <option value="">MASTER</option>
+              {enabledOutputDevices.map(d => (
+                  <option key={d.deviceId} value={d.deviceId}>{d.label.substring(0, 12)}</option>
+              ))}
           </select>
       </div>
     </div>
