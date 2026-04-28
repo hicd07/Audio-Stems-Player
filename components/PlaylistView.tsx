@@ -19,12 +19,14 @@ const TrackLane: React.FC<{
   pixelsPerSecond: number;
   trackHeight: number;
   selected: boolean;
+  isDragging: boolean;
 }> = ({ 
   data, 
   duration,
   pixelsPerSecond,
   trackHeight,
   selected,
+  isDragging
 }) => {
   const { dispatch } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +48,6 @@ const TrackLane: React.FC<{
 
     if (!buffer) return;
 
-    // --- Define Clip Boundaries ---
     const clipStartSec = data.trimStart || 0;
     const clipEndSec = data.trimEnd > 0 ? data.trimEnd : buffer.duration;
     
@@ -54,56 +55,43 @@ const TrackLane: React.FC<{
     const clipEndPx = Math.floor(clipEndSec * pxPerSec);
     const clipWidthPx = clipEndPx - clipStartPx;
 
-    // --- Draw Clip Background & Border ---
     const region = new Path2D();
     region.rect(clipStartPx, 0, clipWidthPx, height);
-    ctx.fillStyle = hexToRgba(data.color, 0.2); // Slightly more opaque fill
+    ctx.fillStyle = hexToRgba(data.color, 0.2);
     ctx.fill(region);
     ctx.strokeStyle = data.color;
     ctx.lineWidth = selected ? 2 : 1;
     ctx.stroke(region);
     
-    // --- Draw Waveform ---
     const channelData = buffer.getChannelData(0);
     const sampleRate = buffer.sampleRate;
     const centerY = height / 2;
-    const amp = centerY * 0.95; // Use 95% of half-height for amplitude
+    const amp = centerY * 0.95;
 
     const samplesPerPixel = sampleRate / pxPerSec;
     const clipStartSample = Math.floor(clipStartSec * sampleRate);
 
     ctx.fillStyle = selected ? hexToRgba(data.color, 0.9) : hexToRgba(data.color, 0.7);
 
-    // Optimized drawing loop: find min/max sample for each pixel column
     for (let x = 0; x < clipWidthPx; x++) {
       const sampleStartIndex = Math.floor(clipStartSample + (x * samplesPerPixel));
-      
-      // Ensure we don't read past the buffer
       if (sampleStartIndex >= channelData.length) break;
-
       const sampleEndIndex = Math.min(Math.floor(sampleStartIndex + samplesPerPixel), channelData.length);
-      
       let min = 1.0;
       let max = -1.0;
-      
-      // When zoomed out, find min/max peak. When zoomed in, this loop will run for few or zero iterations.
       for (let i = sampleStartIndex; i < sampleEndIndex; i++) {
         const sample = channelData[i];
         if (sample < min) min = sample;
         if (sample > max) max = sample;
       }
-      
-      // Fallback for extreme zoom-in (where loop doesn't run) or for silent sections
       if (min === 1.0 && max === -1.0) {
         const sample = channelData[sampleStartIndex] || 0;
         min = sample;
         max = sample;
       }
-
       const yMax = centerY - (max * amp);
       const yMin = centerY - (min * amp);
-      const rectHeight = Math.max(1, yMin - yMax); // Ensure at least 1px height
-      
+      const rectHeight = Math.max(1, yMin - yMax);
       ctx.fillRect(clipStartPx + x, yMax, 1, rectHeight);
     }
   };
@@ -132,7 +120,7 @@ const TrackLane: React.FC<{
   };
   
   return (
-    <div ref={containerRef} style={{height: trackHeight, boxSizing: 'content-box'}} className="w-full relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => { if (!data.audioBuffer) fileInputRef.current?.click() }}>
+    <div ref={containerRef} style={{height: trackHeight, boxSizing: 'content-box'}} className="w-full relative" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => { if (!data.audioBuffer && !isDragging) fileInputRef.current?.click() }}>
         <canvas ref={canvasRef} width={duration * pixelsPerSecond} height={trackHeight} className="absolute top-0 left-0"/>
         {!data.audioBuffer && (
             <div className={`absolute inset-0 flex items-center justify-center text-xs pointer-events-none transition-all
@@ -206,6 +194,12 @@ const PlaylistView: React.FC = () => {
     const pixelsPerSecond = 80 * hZoom;
     const trackHeight = 64 * vZoom;
 
+    // Drag-to-scroll state
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeftStart, setScrollLeftStart] = useState(0);
+    const [hasMoved, setHasMoved] = useState(false);
+
     useEffect(() => {
         const timelineEl = timelineContainerRef.current;
         const headerEl = headerContainerRef.current;
@@ -223,6 +217,45 @@ const PlaylistView: React.FC = () => {
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         if (headerContainerRef.current) headerContainerRef.current.scrollTop = e.currentTarget.scrollTop;
         if (rulerContainerRef.current) rulerContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    };
+
+    // Mouse Drag Handlers
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!timelineContainerRef.current) return;
+        setIsDragging(true);
+        setHasMoved(false);
+        setStartX(e.pageX - timelineContainerRef.current.offsetLeft);
+        setScrollLeftStart(timelineContainerRef.current.scrollLeft);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !timelineContainerRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - timelineContainerRef.current.offsetLeft;
+        const walk = (x - startX);
+        if (Math.abs(walk) > 5) setHasMoved(true);
+        timelineContainerRef.current.scrollLeft = scrollLeftStart - walk;
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    // Touch Swipe Handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!timelineContainerRef.current) return;
+        setIsDragging(true);
+        setHasMoved(false);
+        setStartX(e.touches[0].pageX - timelineContainerRef.current.offsetLeft);
+        setScrollLeftStart(timelineContainerRef.current.scrollLeft);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging || !timelineContainerRef.current) return;
+        const x = e.touches[0].pageX - timelineContainerRef.current.offsetLeft;
+        const walk = (x - startX);
+        if (Math.abs(walk) > 5) setHasMoved(true);
+        timelineContainerRef.current.scrollLeft = scrollLeftStart - walk;
     };
 
     return (
@@ -268,13 +301,20 @@ const PlaylistView: React.FC = () => {
                 </div>
                 <div
                   ref={timelineContainerRef}
-                  className="flex-1 relative overflow-auto shadow-inner"
+                  className={`flex-1 relative overflow-auto shadow-inner ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                   onScroll={handleScroll}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleMouseUp}
                 >
                     <div className="relative" style={{ width: transport.duration * pixelsPerSecond, height: tracks.length * trackHeight }}>
                         <GridCanvas duration={transport.duration} bpm={transport.bpm} pixelsPerSecond={pixelsPerSecond} rowCount={tracks.length} trackHeight={trackHeight} />
                         <div className="absolute top-0 left-0 z-10 w-full">
-                            {tracks.map(track => ( <TrackLane key={track.id} data={track} duration={transport.duration} pixelsPerSecond={pixelsPerSecond} trackHeight={trackHeight} selected={track.id === selectedTrackId} /> ))}
+                            {tracks.map(track => ( <TrackLane key={track.id} data={track} duration={transport.duration} pixelsPerSecond={pixelsPerSecond} trackHeight={trackHeight} selected={track.id === selectedTrackId} isDragging={hasMoved} /> ))}
                         </div>
                         <div className="absolute top-0 bottom-0 w-0.5 bg-red-500/90 z-20 pointer-events-none" style={{ left: transport.currentTime * pixelsPerSecond }} >
                             <div className="absolute -top-[1px] -left-[5.5px] w-3 h-3 bg-red-500 transform rotate-45 border-r border-b border-white/20"></div>
