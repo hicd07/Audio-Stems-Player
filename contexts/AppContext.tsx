@@ -126,7 +126,17 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'ADD_TRACK':
         const newTrack: TrackData = { id: Date.now(), name: `Track ${state.tracks.length + 1}`, color: TRACK_COLORS[0], icon: undefined, audioBuffer: null, isMuted: false, isSolo: false, volume: 0.8, pan: 0, effect: { type: EffectType.NONE, dryWet: 0, params: { param1: 0.5, param2: 0.5 }}, trimStart: 0, trimEnd: 0, isClipping: false };
         return { ...state, tracks: [...state.tracks, newTrack] };
-    case 'REMOVE_TRACK': return { ...state, tracks: state.tracks.filter(t => t.id !== action.payload) };
+    case 'REMOVE_TRACK':
+        const filteredTracks = state.tracks.filter(t => t.id !== action.payload);
+        const renamedTracks = filteredTracks.map((track, index) => {
+            // Check if the track has a default name like "Track 1", "track 2", etc.
+            const isDefaultName = /^Track \d+$/i.test(track.name);
+            if (isDefaultName) {
+                return { ...track, name: `Track ${index + 1}` };
+            }
+            return track;
+        });
+        return { ...state, tracks: renamedTracks };
     case 'UPDATE_TRACK':
         return { ...state, tracks: state.tracks.map(t => t.id === action.payload.id ? { ...t, ...action.payload.updates } : t) };
     case 'LOAD_AUDIO_TO_TRACK':
